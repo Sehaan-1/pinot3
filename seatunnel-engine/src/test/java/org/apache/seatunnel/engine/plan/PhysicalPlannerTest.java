@@ -35,16 +35,17 @@ import org.apache.seatunnel.engine.dag.PlanValidationException;
 import org.junit.jupiter.api.Test;
 
 class PhysicalPlannerTest {
-  private static final CatalogTable TABLE = new CatalogTable("events",
-      List.of(new Column("id", DataType.LONG, false)));
+  private static final CatalogTable TABLE =
+      new CatalogTable("events", List.of(new Column("id", DataType.LONG, false)));
 
   private LogicalNode node(String id, Kind kind, int parallelism) {
     return new LogicalNode(id, kind, "test-plugin", parallelism, TABLE);
   }
 
   private LogicalDag pair(int sourceParallelism, int sinkParallelism, Exchange exchange) {
-    return new LogicalDag(List.of(node("s", Kind.SOURCE, sourceParallelism),
-        node("t", Kind.SINK, sinkParallelism)), List.of(new LogicalEdge("s", "t", exchange)));
+    return new LogicalDag(
+        List.of(node("s", Kind.SOURCE, sourceParallelism), node("t", Kind.SINK, sinkParallelism)),
+        List.of(new LogicalEdge("s", "t", exchange)));
   }
 
   @Test
@@ -54,8 +55,8 @@ class PhysicalPlannerTest {
     assertThat(plan.logicalDag()).isSameAs(dag);
     assertThat(plan.taskGroups()).extracting(TaskGroup::id).containsExactly("s", "t");
     assertThat(plan.totalTasks()).isEqualTo(6);
-    assertThat(plan.group("s").tasks()).containsExactly(
-        new TaskId("s", 0), new TaskId("s", 1), new TaskId("s", 2));
+    assertThat(plan.group("s").tasks())
+        .containsExactly(new TaskId("s", 0), new TaskId("s", 1), new TaskId("s", 2));
     assertThat(plan.targetTasks(new TaskId("s", 1), "t")).containsExactly(new TaskId("t", 1));
     assertThat(new PhysicalPlanner().plan(dag).taskGroups()).isEqualTo(plan.taskGroups());
   }
@@ -72,9 +73,12 @@ class PhysicalPlannerTest {
 
   @Test
   void preservesFanOutEdgesAcrossDifferentExchangeTypes() {
-    LogicalDag dag = new LogicalDag(List.of(node("s", Kind.SOURCE, 2),
-        node("a", Kind.SINK, 2), node("b", Kind.SINK, 3)),
-        List.of(new LogicalEdge("s", "a", Exchange.FORWARD), new LogicalEdge("s", "b", Exchange.SHUFFLE)));
+    LogicalDag dag =
+        new LogicalDag(
+            List.of(node("s", Kind.SOURCE, 2), node("a", Kind.SINK, 2), node("b", Kind.SINK, 3)),
+            List.of(
+                new LogicalEdge("s", "a", Exchange.FORWARD),
+                new LogicalEdge("s", "b", Exchange.SHUFFLE)));
     PhysicalPlan plan = new PhysicalPlanner().plan(dag);
     assertThat(plan.taskGroups()).hasSize(3);
     assertThat(plan.totalTasks()).isEqualTo(7);
@@ -87,9 +91,11 @@ class PhysicalPlannerTest {
     PhysicalPlan plan = new PhysicalPlanner().plan(pair(2, 2, Exchange.FORWARD));
     assertThatThrownBy(() -> plan.group("unknown")).isInstanceOf(PlanValidationException.class);
     assertThatThrownBy(() -> plan.targetTasks(new TaskId("s", 2), "t"))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("out of range");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("out of range");
     assertThatThrownBy(() -> plan.targetTasks(new TaskId("t", 0), "s"))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("No edge");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("No edge");
     assertThatThrownBy(() -> plan.targetTasks(new TaskId("unknown", 0), "t"))
         .isInstanceOf(PlanValidationException.class);
     assertThatThrownBy(() -> new TaskId("s", -1)).isInstanceOf(PlanValidationException.class);
@@ -105,18 +111,23 @@ class PhysicalPlannerTest {
     assertThat(group.tasks()).hasSize(2);
     assertThatThrownBy(() -> new TaskGroup(operator, List.of(new TaskId("s", 0))))
         .isInstanceOf(PlanValidationException.class);
-    assertThatThrownBy(() -> new TaskGroup(operator, List.of(new TaskId("s", 0), new TaskId("s", 0))))
+    assertThatThrownBy(
+            () -> new TaskGroup(operator, List.of(new TaskId("s", 0), new TaskId("s", 0))))
         .isInstanceOf(PlanValidationException.class);
-    assertThatThrownBy(() -> new TaskGroup(operator, List.of(new TaskId("x", 0), new TaskId("x", 1))))
+    assertThatThrownBy(
+            () -> new TaskGroup(operator, List.of(new TaskId("x", 0), new TaskId("x", 1))))
         .isInstanceOf(PlanValidationException.class);
   }
 
   @Test
   void exposedPlanCollectionsCannotBeMutated() {
     PhysicalPlan plan = new PhysicalPlanner().plan(pair(2, 2, Exchange.SHUFFLE));
-    assertThatThrownBy(() -> plan.taskGroups().clear()).isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> plan.group("s").tasks().clear()).isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> plan.edges().clear()).isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> plan.taskGroups().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> plan.group("s").tasks().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> plan.edges().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
     assertThatThrownBy(() -> plan.targetTasks(new TaskId("s", 0), "t").clear())
         .isInstanceOf(UnsupportedOperationException.class);
   }
@@ -125,11 +136,13 @@ class PhysicalPlannerTest {
   void enforcesTaskBudgetBeforeAllocationWithoutIntegerOverflow() {
     assertThatThrownBy(() -> new PhysicalPlanner(0)).isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> new PhysicalPlanner(3).plan(pair(2, 2, Exchange.FORWARD)))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Task budget exceeded");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Task budget exceeded");
     assertThat(new PhysicalPlanner(4).plan(pair(2, 2, Exchange.FORWARD)).totalTasks()).isEqualTo(4);
     LogicalDag huge = pair(Integer.MAX_VALUE, Integer.MAX_VALUE, Exchange.FORWARD);
     assertThatThrownBy(() -> new PhysicalPlanner().plan(huge))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("4294967294");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("4294967294");
   }
 
   @Test

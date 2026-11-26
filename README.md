@@ -17,7 +17,7 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 3 | `seatunnel-api` (engine-independent contracts) | ✅ Merged |
 | 4 | `seatunnel-plugin-discovery` + `seatunnel-formats` | ✅ Merged |
 | 5 | `seatunnel-core` + `seatunnel-cli` + FakeSource + ConsoleSink (runnable baseline) | ✅ Merged |
-| 6a | `seatunnel-engine`: logical DAG + physical task planning | In progress |
+| 6a | `seatunnel-engine`: logical DAG + physical task planning | In review — PR #6 |
 | 6b–6d | Zeta: Master/Worker → checkpoint → submit/REST | ⬜ |
 | 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |
 

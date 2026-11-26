@@ -31,8 +31,8 @@ import org.apache.seatunnel.engine.dag.LogicalNode.Kind;
 import org.junit.jupiter.api.Test;
 
 class LogicalDagTest {
-  private static final CatalogTable TABLE = new CatalogTable("events",
-      List.of(new Column("id", DataType.LONG, false)));
+  private static final CatalogTable TABLE =
+      new CatalogTable("events", List.of(new Column("id", DataType.LONG, false)));
 
   private LogicalNode node(String id, Kind kind) {
     return new LogicalNode(id, kind, "test-plugin", 2, TABLE);
@@ -44,12 +44,15 @@ class LogicalDagTest {
 
   @Test
   void validatesCompleteChainAndSchemaNamesNeedNotMatch() {
-    LogicalNode sink = new LogicalNode("sink", Kind.SINK, "console", 2,
-        new CatalogTable("renamed", TABLE.columns()));
-    LogicalDag dag = new LogicalDag(List.of(node("source", Kind.SOURCE),
-        node("transform", Kind.TRANSFORM), sink),
-        List.of(edge("source", "transform"), edge("transform", "sink")));
-    assertThat(dag.topologicalOrder()).extracting(LogicalNode::id)
+    LogicalNode sink =
+        new LogicalNode(
+            "sink", Kind.SINK, "console", 2, new CatalogTable("renamed", TABLE.columns()));
+    LogicalDag dag =
+        new LogicalDag(
+            List.of(node("source", Kind.SOURCE), node("transform", Kind.TRANSFORM), sink),
+            List.of(edge("source", "transform"), edge("transform", "sink")));
+    assertThat(dag.topologicalOrder())
+        .extracting(LogicalNode::id)
         .containsExactly("source", "transform", "sink");
     assertThat(dag.exchange("source", "transform")).isEqualTo(Exchange.FORWARD);
     assertThat(dag.node("sink")).isEqualTo(sink);
@@ -57,12 +60,14 @@ class LogicalDagTest {
 
   @Test
   void acceptsExplicitSchemaChangesButRejectsInvalidDirectionalSchemaMetadata() {
-    CatalogTable output = new CatalogTable("names",
-        List.of(new Column("name", DataType.STRING, false)));
+    CatalogTable output =
+        new CatalogTable("names", List.of(new Column("name", DataType.STRING, false)));
     LogicalNode transform = new LogicalNode("x", Kind.TRANSFORM, "rename", 2, TABLE, output);
     LogicalNode sink = new LogicalNode("t", Kind.SINK, "console", 2, output);
-    LogicalDag dag = new LogicalDag(List.of(node("s", Kind.SOURCE), transform, sink),
-        List.of(edge("s", "x"), edge("x", "t")));
+    LogicalDag dag =
+        new LogicalDag(
+            List.of(node("s", Kind.SOURCE), transform, sink),
+            List.of(edge("s", "x"), edge("x", "t")));
     assertThat(dag.node("x").inputTable()).isEqualTo(TABLE);
     assertThat(dag.node("x").outputTable()).isEqualTo(output);
     assertThatThrownBy(() -> new LogicalNode("s", Kind.SOURCE, "fake", 1, TABLE, TABLE))
@@ -75,11 +80,17 @@ class LogicalDagTest {
 
   @Test
   void branchingAndIndependentPipelinesHaveDeterministicDependencyOrder() {
-    List<LogicalNode> nodes = new ArrayList<>(List.of(node("s", Kind.SOURCE),
-        node("a", Kind.TRANSFORM), node("b", Kind.SINK), node("c", Kind.SINK),
-        node("d", Kind.SOURCE), node("e", Kind.SINK)));
-    List<LogicalEdge> edges = new ArrayList<>(List.of(
-        edge("s", "a"), edge("s", "b"), edge("a", "c"), edge("d", "e")));
+    List<LogicalNode> nodes =
+        new ArrayList<>(
+            List.of(
+                node("s", Kind.SOURCE),
+                node("a", Kind.TRANSFORM),
+                node("b", Kind.SINK),
+                node("c", Kind.SINK),
+                node("d", Kind.SOURCE),
+                node("e", Kind.SINK)));
+    List<LogicalEdge> edges =
+        new ArrayList<>(List.of(edge("s", "a"), edge("s", "b"), edge("a", "c"), edge("d", "e")));
     List<LogicalNode> expected = new LogicalDag(nodes, edges).topologicalOrder();
     Random random = new Random(123);
     for (int i = 0; i < 30; i++) {
@@ -96,7 +107,8 @@ class LogicalDagTest {
 
   @Test
   void snapshotsCollectionsAndExposesOnlyImmutableViews() {
-    List<LogicalNode> nodes = new ArrayList<>(List.of(node("s", Kind.SOURCE), node("t", Kind.SINK)));
+    List<LogicalNode> nodes =
+        new ArrayList<>(List.of(node("s", Kind.SOURCE), node("t", Kind.SINK)));
     List<LogicalEdge> edges = new ArrayList<>(List.of(edge("s", "t")));
     LogicalDag dag = new LogicalDag(nodes, edges);
     nodes.clear();
@@ -105,50 +117,77 @@ class LogicalDagTest {
     assertThat(dag.edges()).hasSize(1);
     assertThatThrownBy(() -> dag.nodes().clear()).isInstanceOf(UnsupportedOperationException.class);
     assertThatThrownBy(() -> dag.edges().clear()).isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> dag.topologicalOrder().clear()).isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> dag.topologicalOrder().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test
   void rejectsEmptyDuplicateAndUnknownOperatorsAndDuplicateEdges() {
     List<LogicalNode> nodes = List.of(node("s", Kind.SOURCE), node("t", Kind.SINK));
     assertThatThrownBy(() -> new LogicalDag(List.of(), List.of()))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("complete pipeline");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("complete pipeline");
     assertThatThrownBy(() -> new LogicalDag(List.of(nodes.get(0), nodes.get(0)), List.of()))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Duplicate operator");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Duplicate operator");
     assertThatThrownBy(() -> new LogicalDag(nodes, List.of(edge("s", "unknown"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Unknown operator");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Unknown operator");
     assertThatThrownBy(() -> new LogicalDag(nodes, List.of(edge("s", "t"), edge("s", "t"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Duplicate edge");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Duplicate edge");
     LogicalDag dag = new LogicalDag(nodes, List.of(edge("s", "t")));
     assertThatThrownBy(() -> dag.node("absent")).isInstanceOf(PlanValidationException.class);
     assertThatThrownBy(() -> dag.exchange("t", "s"))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("No edge");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("No edge");
   }
 
   @Test
   void rejectsSelfEdgesAndCyclesIncludingInDisconnectedComponents() {
     assertThatThrownBy(() -> edge("a", "a"))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Self-edge");
-    List<LogicalNode> nodes = List.of(node("s", Kind.SOURCE), node("t", Kind.SINK),
-        node("a", Kind.TRANSFORM), node("b", Kind.TRANSFORM), node("c", Kind.TRANSFORM));
-    assertThatThrownBy(() -> new LogicalDag(nodes, List.of(edge("s", "t"),
-        edge("a", "b"), edge("b", "c"), edge("c", "a"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Cycle detected");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Self-edge");
+    List<LogicalNode> nodes =
+        List.of(
+            node("s", Kind.SOURCE),
+            node("t", Kind.SINK),
+            node("a", Kind.TRANSFORM),
+            node("b", Kind.TRANSFORM),
+            node("c", Kind.TRANSFORM));
+    assertThatThrownBy(
+            () ->
+                new LogicalDag(
+                    nodes, List.of(edge("s", "t"), edge("a", "b"), edge("b", "c"), edge("c", "a"))))
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Cycle detected");
   }
 
   @Test
   void rejectsDanglingAndReversedOperatorShapesAndUnsupportedFanIn() {
     assertThatThrownBy(() -> new LogicalDag(List.of(node("s", Kind.SOURCE)), List.of()))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("topology");
-    assertThatThrownBy(() -> new LogicalDag(
-        List.of(node("s", Kind.SOURCE), node("t", Kind.SINK)), List.of(edge("t", "s"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("topology");
-    assertThatThrownBy(() -> new LogicalDag(List.of(node("s", Kind.SOURCE),
-        node("u", Kind.SOURCE), node("t", Kind.SINK)), List.of(edge("s", "t"), edge("u", "t"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("topology");
-    assertThatThrownBy(() -> new LogicalDag(List.of(node("s", Kind.SOURCE),
-        node("x", Kind.TRANSFORM)), List.of(edge("s", "x"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("topology");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("topology");
+    assertThatThrownBy(
+            () ->
+                new LogicalDag(
+                    List.of(node("s", Kind.SOURCE), node("t", Kind.SINK)), List.of(edge("t", "s"))))
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("topology");
+    assertThatThrownBy(
+            () ->
+                new LogicalDag(
+                    List.of(node("s", Kind.SOURCE), node("u", Kind.SOURCE), node("t", Kind.SINK)),
+                    List.of(edge("s", "t"), edge("u", "t"))))
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("topology");
+    assertThatThrownBy(
+            () ->
+                new LogicalDag(
+                    List.of(node("s", Kind.SOURCE), node("x", Kind.TRANSFORM)),
+                    List.of(edge("s", "x"))))
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("topology");
   }
 
   @Test
@@ -156,13 +195,23 @@ class LogicalDagTest {
     LogicalNode source = node("s", Kind.SOURCE);
     LogicalNode sink = new LogicalNode("t", Kind.SINK, "console", 3, TABLE);
     assertThatThrownBy(() -> new LogicalDag(List.of(source, sink), List.of(edge("s", "t"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("equal parallelism");
-    assertThat(new LogicalDag(List.of(source, sink),
-        List.of(new LogicalEdge("s", "t", Exchange.SHUFFLE))).nodes()).hasSize(2);
-    LogicalNode different = new LogicalNode("t", Kind.SINK, "console", 2,
-        new CatalogTable("events", List.of(new Column("id", DataType.LONG, true))));
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("equal parallelism");
+    assertThat(
+            new LogicalDag(
+                    List.of(source, sink), List.of(new LogicalEdge("s", "t", Exchange.SHUFFLE)))
+                .nodes())
+        .hasSize(2);
+    LogicalNode different =
+        new LogicalNode(
+            "t",
+            Kind.SINK,
+            "console",
+            2,
+            new CatalogTable("events", List.of(new Column("id", DataType.LONG, true))));
     assertThatThrownBy(() -> new LogicalDag(List.of(source, different), List.of(edge("s", "t"))))
-        .isInstanceOf(PlanValidationException.class).hasMessageContaining("Incompatible edge schemas");
+        .isInstanceOf(PlanValidationException.class)
+        .hasMessageContaining("Incompatible edge schemas");
   }
 
   @Test
@@ -174,7 +223,8 @@ class LogicalDagTest {
         .isInstanceOf(PlanValidationException.class);
     assertThatThrownBy(() -> new LogicalEdge("s", " ", Exchange.SHUFFLE))
         .isInstanceOf(PlanValidationException.class);
-    assertThatThrownBy(() -> new LogicalEdge("s", "t", null)).isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new LogicalEdge("s", "t", null))
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test

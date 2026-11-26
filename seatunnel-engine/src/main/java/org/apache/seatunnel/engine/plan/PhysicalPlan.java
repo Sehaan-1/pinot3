@@ -32,7 +32,8 @@ public final class PhysicalPlan {
   PhysicalPlan(LogicalDag logicalDag, List<TaskGroup> taskGroups) {
     this.logicalDag = logicalDag;
     this.taskGroups = List.copyOf(taskGroups);
-    groupsById = taskGroups.stream().collect(ImmutableMap.toImmutableMap(TaskGroup::id, group -> group));
+    groupsById =
+        taskGroups.stream().collect(ImmutableMap.toImmutableMap(TaskGroup::id, group -> group));
     totalTasks = taskGroups.stream().mapToLong(group -> group.tasks().size()).sum();
   }
 

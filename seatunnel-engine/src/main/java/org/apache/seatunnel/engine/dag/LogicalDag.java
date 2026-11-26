@@ -52,12 +52,17 @@ public final class LogicalDag {
       throw new PlanValidationException("DAG must contain at least one complete pipeline");
     }
     this.nodes = ImmutableSortedMap.copyOf(indexed);
-    this.edges = ImmutableList.copyOf(edges).stream()
-        .sorted(Comparator.comparing(LogicalEdge::sourceId).thenComparing(LogicalEdge::targetId))
-        .collect(ImmutableList.toImmutableList());
-    MutableValueGraph<String, Exchange> mutable = ValueGraphBuilder.directed()
-        .allowsSelfLoops(false).nodeOrder(ElementOrder.<String>natural())
-        .incidentEdgeOrder(ElementOrder.stable()).build();
+    this.edges =
+        ImmutableList.copyOf(edges).stream()
+            .sorted(
+                Comparator.comparing(LogicalEdge::sourceId).thenComparing(LogicalEdge::targetId))
+            .collect(ImmutableList.toImmutableList());
+    MutableValueGraph<String, Exchange> mutable =
+        ValueGraphBuilder.directed()
+            .allowsSelfLoops(false)
+            .nodeOrder(ElementOrder.<String>natural())
+            .incidentEdgeOrder(ElementOrder.stable())
+            .build();
     this.nodes.keySet().forEach(mutable::addNode);
     for (LogicalEdge edge : this.edges) {
       LogicalNode source = node(edge.sourceId());
@@ -66,38 +71,45 @@ public final class LogicalDag {
         throw new PlanValidationException("Duplicate edge: " + source.id() + " -> " + target.id());
       }
       if (source.kind() == Kind.SINK || target.kind() == Kind.SOURCE) {
-        throw new PlanValidationException("Invalid operator topology for edge: " + source.id() + " -> " + target.id());
+        throw new PlanValidationException(
+            "Invalid operator topology for edge: " + source.id() + " -> " + target.id());
       }
       if (!source.outputTable().columns().equals(target.inputTable().columns())) {
-        throw new PlanValidationException("Incompatible edge schemas: " + source.id() + " -> " + target.id());
+        throw new PlanValidationException(
+            "Incompatible edge schemas: " + source.id() + " -> " + target.id());
       }
       if (edge.exchange() == Exchange.FORWARD && source.parallelism() != target.parallelism()) {
-        throw new PlanValidationException("FORWARD requires equal parallelism: " + source.id() + " -> " + target.id());
+        throw new PlanValidationException(
+            "FORWARD requires equal parallelism: " + source.id() + " -> " + target.id());
       }
       mutable.putEdgeValue(source.id(), target.id(), edge.exchange());
     }
     graph = ImmutableValueGraph.copyOf(mutable);
-    List<String> order = ImmutableList.copyOf(
-        Traverser.forGraph(graph.asGraph()).depthFirstPostOrder(graph.nodes())).reverse();
+    List<String> order =
+        ImmutableList.copyOf(Traverser.forGraph(graph.asGraph()).depthFirstPostOrder(graph.nodes()))
+            .reverse();
     Map<String, Integer> positions = new HashMap<>();
     for (int i = 0; i < order.size(); i++) {
       positions.put(order.get(i), i);
     }
     for (LogicalEdge edge : this.edges) {
       if (positions.get(edge.sourceId()) >= positions.get(edge.targetId())) {
-        throw new PlanValidationException("Cycle detected at edge: " + edge.sourceId() + " -> " + edge.targetId());
+        throw new PlanValidationException(
+            "Cycle detected at edge: " + edge.sourceId() + " -> " + edge.targetId());
       }
     }
     for (LogicalNode node : this.nodes.values()) {
       int inputs = graph.inDegree(node.id());
       int outputs = graph.outDegree(node.id());
-      boolean valid = switch (node.kind()) {
-        case SOURCE -> inputs == 0 && outputs > 0;
-        case TRANSFORM -> inputs == 1 && outputs > 0;
-        case SINK -> inputs == 1 && outputs == 0;
-      };
+      boolean valid =
+          switch (node.kind()) {
+            case SOURCE -> inputs == 0 && outputs > 0;
+            case TRANSFORM -> inputs == 1 && outputs > 0;
+            case SINK -> inputs == 1 && outputs == 0;
+          };
       if (!valid) {
-        throw new PlanValidationException("Invalid " + node.kind() + " topology for operator: " + node.id());
+        throw new PlanValidationException(
+            "Invalid " + node.kind() + " topology for operator: " + node.id());
       }
     }
     topologicalOrder = order.stream().map(this::node).collect(ImmutableList.toImmutableList());
@@ -127,7 +139,8 @@ public final class LogicalDag {
   public Exchange exchange(String sourceId, String targetId) {
     node(sourceId);
     node(targetId);
-    return graph.edgeValue(sourceId, targetId).orElseThrow(
-        () -> new PlanValidationException("No edge: " + sourceId + " -> " + targetId));
+    return graph
+        .edgeValue(sourceId, targetId)
+        .orElseThrow(() -> new PlanValidationException("No edge: " + sourceId + " -> " + targetId));
   }
 }

@@ -20,8 +20,13 @@ import java.util.Objects;
 import org.apache.seatunnel.api.table.CatalogTable;
 
 /** Immutable planning metadata; no live operators or execution-engine handles. */
-public record LogicalNode(String id, Kind kind, String pluginId, int parallelism,
-    CatalogTable inputTable, CatalogTable outputTable) {
+public record LogicalNode(
+    String id,
+    Kind kind,
+    String pluginId,
+    int parallelism,
+    CatalogTable inputTable,
+    CatalogTable outputTable) {
   public LogicalNode {
     if (Objects.requireNonNull(id, "id").isBlank()) {
       throw new PlanValidationException("Operator ID must not be blank");
@@ -54,8 +59,13 @@ public record LogicalNode(String id, Kind kind, String pluginId, int parallelism
 
   /** Convenience constructor for sources, sinks and schema-preserving transforms. */
   public LogicalNode(String id, Kind kind, String pluginId, int parallelism, CatalogTable table) {
-    this(id, kind, pluginId, parallelism,
-        kind == Kind.SOURCE ? null : table, kind == Kind.SINK ? null : table);
+    this(
+        id,
+        kind,
+        pluginId,
+        parallelism,
+        kind == Kind.SOURCE ? null : table,
+        kind == Kind.SINK ? null : table);
   }
 
   public enum Kind {

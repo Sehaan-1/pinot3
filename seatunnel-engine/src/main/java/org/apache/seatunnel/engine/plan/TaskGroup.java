@@ -32,7 +32,8 @@ public record TaskGroup(LogicalNode operator, List<TaskId> tasks) {
     for (int i = 0; i < tasks.size(); i++) {
       TaskId task = tasks.get(i);
       if (!task.operatorId().equals(operator.id()) || task.subtaskIndex() != i) {
-        throw new PlanValidationException("Task ownership or index order is invalid: " + operator.id());
+        throw new PlanValidationException(
+            "Task ownership or index order is invalid: " + operator.id());
       }
     }
   }

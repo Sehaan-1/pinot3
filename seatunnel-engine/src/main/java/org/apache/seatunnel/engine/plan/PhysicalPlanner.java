@@ -22,7 +22,10 @@ import java.util.stream.IntStream;
 import org.apache.seatunnel.engine.dag.LogicalDag;
 import org.apache.seatunnel.engine.dag.PlanValidationException;
 
-/** Thread-safe deterministic lowering with an explicit allocation budget and no runtime side effects. */
+/**
+ * Thread-safe deterministic lowering with an explicit allocation budget and no runtime side
+ * effects.
+ */
 public final class PhysicalPlanner {
   public static final int DEFAULT_MAX_TASKS = 100_000;
   private final int maxTasks;
@@ -42,10 +45,19 @@ public final class PhysicalPlanner {
     Objects.requireNonNull(dag, "dag");
     long requested = dag.nodes().stream().mapToLong(node -> node.parallelism()).sum();
     if (requested > maxTasks) {
-      throw new PlanValidationException("Task budget exceeded: requested " + requested + ", limit " + maxTasks);
+      throw new PlanValidationException(
+          "Task budget exceeded: requested " + requested + ", limit " + maxTasks);
     }
-    List<TaskGroup> groups = dag.topologicalOrder().stream().map(node -> new TaskGroup(node,
-        IntStream.range(0, node.parallelism()).mapToObj(index -> new TaskId(node.id(), index)).toList())).toList();
+    List<TaskGroup> groups =
+        dag.topologicalOrder().stream()
+            .map(
+                node ->
+                    new TaskGroup(
+                        node,
+                        IntStream.range(0, node.parallelism())
+                            .mapToObj(index -> new TaskId(node.id(), index))
+                            .toList()))
+            .toList();
     return new PhysicalPlan(dag, groups);
   }
 }
