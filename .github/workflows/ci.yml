@@ -29,6 +29,9 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Test engine planning contracts
+        run: ./mvnw -pl seatunnel-engine -am test
+
       - name: Test connectors and local core
         run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test
 
