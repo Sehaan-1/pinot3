@@ -120,7 +120,11 @@ class PluginDiscoveryTest {
   }
 
   @Test
-  void rejectsInvalidPathsAndEmptyBundles() {
+  void rejectsInvalidPathsAndEmptyBundles() throws Exception {
+    Path corrupt = temporary.resolve("corrupt.jar");
+    Files.writeString(corrupt, "not a ZIP archive");
+    assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of(corrupt)))
+        .isInstanceOf(PluginException.class).hasMessageContaining("Cannot read plugin bundle JAR");
     assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of()))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of(temporary.resolve("absent.jar"))))

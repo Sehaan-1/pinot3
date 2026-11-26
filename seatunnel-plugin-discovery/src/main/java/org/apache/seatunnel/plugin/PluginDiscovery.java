@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
+import java.util.jar.JarFile;
 
 /** Owns one explicit plugin bundle. Only trusted JARs may be loaded. */
 public final class PluginDiscovery<P extends Plugin> implements AutoCloseable {
@@ -54,10 +55,13 @@ public final class PluginDiscovery<P extends Plugin> implements AutoCloseable {
         if (!Files.isRegularFile(path) || !path.toString().endsWith(".jar")) {
           throw new PluginException("Not a plugin JAR: " + path);
         }
+        try (JarFile archive = new JarFile(path.toFile())) {
+          archive.size(); // Validate the central directory before creating the loader.
+        }
         urls[i] = path.toUri().toURL();
       }
     } catch (IOException e) {
-      throw new PluginException("Invalid plugin bundle path", e);
+      throw new PluginException("Cannot read plugin bundle JAR", e);
     }
     BundleClassLoader loader = new BundleClassLoader(urls, service.getClassLoader(), service);
     Thread thread = Thread.currentThread();

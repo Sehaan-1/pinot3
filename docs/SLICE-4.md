@@ -36,6 +36,9 @@ Parquet pages, Avro object containers and schema registry integration are out of
 scope. JSON/CSV/Avro payloads do not silently become SeaTunnelRows: schema-to-row
 mapping belongs in later connectors. No dummy row conversion is introduced.
 
+Align transitive `commons-codec:commons-codec:1.17.0` in root dependency management:
+CSV requests 1.16.1, while Avro/compress requests 1.17.0. Keep convergence enforced.
+
 Tests use existing JUnit 5.11.0 and AssertJ 3.26.3. No mocking framework is needed.
 
 ## Contracts
