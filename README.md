@@ -18,7 +18,7 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 4 | `seatunnel-plugin-discovery` + `seatunnel-formats` | ✅ Merged |
 | 5 | `seatunnel-core` + `seatunnel-cli` + FakeSource + ConsoleSink (runnable baseline) | ✅ Merged |
 | 6a | `seatunnel-engine`: logical DAG + physical task planning | ✅ Merged |
-| 6b | Embedded Master/Worker and bounded remote tasks | In progress |
+| 6b | Embedded Master/Worker and bounded remote tasks | In review — PR #7 |
 | 6c–6d | Checkpoint/recovery → submit/REST | ⬜ |
 | 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |
 

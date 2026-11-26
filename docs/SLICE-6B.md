@@ -51,11 +51,13 @@ Build/adopt decisions:
   hidden per-job polling thread. Callers must await/poll or close handles; automatic
   background failure supervision is not claimed. MasterService retains a bounded
   number of handles, reaps terminal ones on submission, and cancels all on close.
-- await has one overall timeout and preserves interruption. Timeout, interruption,
+- await has one overall execution-wait deadline and preserves interruption. Timeout, interruption,
   failure and explicit close trigger best-effort remote Future.cancel(true), which
   interrupts local worker work through the remote wait. Tasks must cooperate with
   interruption; Java cannot forcibly stop arbitrary user code. Cancellation is not
   rollback, exactly-once execution or proof that remote side effects have ceased.
+  Cancellation itself uses Hazelcast control round trips and its network timeouts;
+  the execution-wait deadline is not a hard real-time bound on those cleanup calls.
 - Worker shutdown cancels queued/running work, shuts down its pool and waits a
   bounded duration. Non-cooperative tasks cause an explicit shutdown error rather
   than a false clean-stop claim. Metrics are worker-tagged, never job/task-tagged,
