@@ -18,8 +18,8 @@ package org.apache.seatunnel.engine.checkpoint;
 
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.map.IMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -53,7 +53,8 @@ public final class CheckpointStore {
   void complete(UUID jobId, CheckpointRecord decision) {
     if (!records.executeOnKey(jobId, new Transition(decision, decision.completed()))) {
       CheckpointRecord current = get(jobId);
-      if (current == null || current.id() != decision.id()
+      if (current == null
+          || current.id() != decision.id()
           || current.status() != CheckpointRecord.Status.COMPLETED)
         throw new IllegalStateException("Checkpoint decision changed during completion");
     }
@@ -84,8 +85,10 @@ public final class CheckpointStore {
     @Override
     public Boolean process(Map.Entry<UUID, CheckpointRecord> entry) {
       CheckpointRecord current = entry.getValue();
-      boolean matches = current == null ? expectedId == 0
-          : current.id() == expectedId && current.status() == expectedStatus;
+      boolean matches =
+          current == null
+              ? expectedId == 0
+              : current.id() == expectedId && current.status() == expectedStatus;
       if (matches) entry.setValue(replacement);
       return matches;
     }

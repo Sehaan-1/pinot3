@@ -123,6 +123,8 @@ class CheckpointRecoveryIT {
         .satisfies(e -> assertThat(e.getSuppressed()).hasSize(1));
     assertThat(participant.aborts).isEqualTo(1);
     assertThat(store.get(job)).isNull();
+    assertThatThrownBy(() -> coordinator.checkpoint(1))
+        .isInstanceOf(IllegalArgumentException.class);
     participant.failPrepare = false;
     participant.failAbort = false;
     participant.failComplete = true;
@@ -185,7 +187,8 @@ class CheckpointRecoveryIT {
     @SuppressWarnings("unchecked")
     var snapshot = (SplitLedger.Snapshot<Split>) replacement.restored;
     assertThat(SplitLedger.restore(2, snapshot).assign(1, 10))
-        .extracting(Split::splitId).containsExactly("b");
+        .extracting(Split::splitId)
+        .containsExactly("b");
     other.delete(job);
   }
 
@@ -209,12 +212,20 @@ class CheckpointRecoveryIT {
     assertThat(((Offset) right.restored).value).isEqualTo(20);
     assertThat(left.commits).isEqualTo(2);
     assertThat(right.commits).isEqualTo(2);
+    right.failPrepare = true;
+    assertThatThrownBy(() -> replacement.checkpoint(3)).hasMessage("prepare failed");
+    assertThat(left.aborts).isEqualTo(1);
+    assertThat(right.aborts).isEqualTo(1);
+    assertThat(other.get(job).id()).isEqualTo(2);
     other.delete(job);
   }
 
   private static final class Offset implements Serializable {
     final int value;
-    Offset(int value) { this.value = value; }
+
+    Offset(int value) {
+      this.value = value;
+    }
   }
 
   private static CheckpointCoordinator coordinator(UUID job, CheckpointStore store, Participant p) {
@@ -237,7 +248,8 @@ class CheckpointRecoveryIT {
 
     public PreparedState prepare(long id) throws Exception {
       if (failPrepare) throw new Exception("prepare failed");
-      return new PreparedState(snapshot == null ? "offset-" + id : snapshot, List.of("transaction-" + id));
+      return new PreparedState(
+          snapshot == null ? "offset-" + id : snapshot, List.of("transaction-" + id));
     }
 
     public void commit(long id, List<Serializable> handles) throws Exception {

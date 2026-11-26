@@ -40,7 +40,8 @@ public final class CheckpointCoordinator {
 
   public synchronized CheckpointRecord checkpoint(long id) throws Exception {
     if (publicationUncertain)
-      throw new IllegalStateException("Resolve uncertain publication before replacing this coordinator");
+      throw new IllegalStateException(
+          "Resolve uncertain publication before replacing this coordinator");
     CheckpointRecord before = store.get(jobId);
     if (id <= lastAttempt || (before != null && id <= before.id()))
       throw new IllegalArgumentException("checkpoint ID must increase");
