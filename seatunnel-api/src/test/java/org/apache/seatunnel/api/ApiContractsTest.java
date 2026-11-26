@@ -60,7 +60,8 @@ class ApiContractsTest {
   void rowsAndSchemasRoundTripThroughSerialization() throws Exception {
     SeaTunnelRow row = new SeaTunnelRow(new byte[] {1, 2}, "hello");
     assertThat(roundTrip(row)).isEqualTo(row);
-    CatalogTable table = new CatalogTable("events", List.of(new Column("id", DataType.LONG, false)));
+    CatalogTable table =
+        new CatalogTable("events", List.of(new Column("id", DataType.LONG, false)));
     assertThat(roundTrip(table)).isEqualTo(table);
   }
 
@@ -69,7 +70,8 @@ class ApiContractsTest {
     try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
       out.writeObject(value);
     }
-    try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+    try (ObjectInputStream in =
+        new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
       return in.readObject();
     }
   }
@@ -81,7 +83,8 @@ class ApiContractsTest {
     CatalogTable table = new CatalogTable("events", columns);
     columns.clear();
     assertThat(table.columns()).containsExactly(id);
-    assertThatThrownBy(() -> table.columns().clear()).isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> table.columns().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
     assertThatThrownBy(() -> new CatalogTable("events", List.of(id, id)))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> new CatalogTable(" ", List.of(id)))
@@ -90,8 +93,7 @@ class ApiContractsTest {
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> new Column("", DataType.INT, true))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> new Column("id", null, true))
-        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new Column("id", null, true)).isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -102,9 +104,11 @@ class ApiContractsTest {
     assertThat(options.get(Option.required("parallelism", Integer.class))).isEqualTo(4);
     assertThat(options.get(Option.withDefault("mode", String.class, "batch"))).isEqualTo("batch");
     assertThatThrownBy(() -> options.get(Option.required("missing", String.class)))
-        .isInstanceOf(ConfigException.class).hasMessageContaining("missing");
+        .isInstanceOf(ConfigException.class)
+        .hasMessageContaining("missing");
     assertThatThrownBy(() -> options.get(Option.required("parallelism", String.class)))
-        .isInstanceOf(ConfigException.class).hasMessageContaining("parallelism");
+        .isInstanceOf(ConfigException.class)
+        .hasMessageContaining("parallelism");
     assertThatThrownBy(() -> Option.required(" ", String.class))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> Option.withDefault("mode", String.class, null))
@@ -116,8 +120,12 @@ class ApiContractsTest {
     try (var paths = Files.walk(Path.of("src/main/java"))) {
       for (Path path : paths.filter(p -> p.toString().endsWith(".java")).toList()) {
         String source = Files.readString(path);
-        assertThat(source).doesNotContain("org.apache.seatunnel.engine", "org.apache.flink",
-            "org.apache.spark", "org.apache.seatunnel.connectors");
+        assertThat(source)
+            .doesNotContain(
+                "org.apache.seatunnel.engine",
+                "org.apache.flink",
+                "org.apache.spark",
+                "org.apache.seatunnel.connectors");
       }
     }
   }

@@ -30,8 +30,9 @@ public final class Options {
   public <T> T get(Option<T> option) {
     Object value = values.get(option.key());
     if (value == null) {
-      return option.defaultValue().orElseThrow(
-          () -> new ConfigException("Missing required option: " + option.key()));
+      return option
+          .defaultValue()
+          .orElseThrow(() -> new ConfigException("Missing required option: " + option.key()));
     }
     if (!option.type().isInstance(value)) {
       throw new ConfigException("Invalid type for option: " + option.key());

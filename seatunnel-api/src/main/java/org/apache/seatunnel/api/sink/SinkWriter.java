@@ -18,8 +18,8 @@ package org.apache.seatunnel.api.sink;
 
 import java.io.Serializable;
 import java.util.List;
-import org.apache.seatunnel.api.state.Checkpointed;
 import org.apache.seatunnel.api.state.CheckpointState;
+import org.apache.seatunnel.api.state.Checkpointed;
 import org.apache.seatunnel.api.table.SeaTunnelRow;
 
 /** Single-thread-confined writer; prepareCommit must not commit external transactions. */

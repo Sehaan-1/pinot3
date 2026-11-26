@@ -35,17 +35,6 @@ jobs:
       - name: Test API contracts
         run: ./mvnw -pl seatunnel-api -am test
 
-      - name: Temporary formatter diagnostic
-        run: |
-          ./mvnw -B -ntp spotless:apply
-          python3 - <<'PYCODE'
-          import base64, subprocess
-          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-api'])
-          encoded = base64.b64encode(diff).decode()
-          for index, offset in enumerate(range(0, len(encoded), 2000)):
-              print(f'::warning title=Formatting patch {index}::' + encoded[offset:offset + 2000])
-          PYCODE
-
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify
 

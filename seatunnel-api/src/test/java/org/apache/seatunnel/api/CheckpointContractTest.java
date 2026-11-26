@@ -72,22 +72,23 @@ class CheckpointContractTest {
 
     @Override
     public Optional<SinkCommitter<String>> createCommitter() {
-      return Optional.of(new SinkCommitter<>() {
-        @Override
-        public void commit(long checkpointId, List<String> handles) {
-          committed.addAll(handles);
-        }
+      return Optional.of(
+          new SinkCommitter<>() {
+            @Override
+            public void commit(long checkpointId, List<String> handles) {
+              committed.addAll(handles);
+            }
 
-        @Override
-        public void abort(long checkpointId, List<String> handles) {
-          committed.removeAll(handles);
-        }
+            @Override
+            public void abort(long checkpointId, List<String> handles) {
+              committed.removeAll(handles);
+            }
 
-        @Override
-        public void close() {
-          // This in-memory test committer holds no external resources.
-        }
-      });
+            @Override
+            public void close() {
+              // This in-memory test committer holds no external resources.
+            }
+          });
     }
   }
 

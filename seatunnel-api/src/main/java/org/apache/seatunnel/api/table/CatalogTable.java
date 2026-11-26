@@ -40,7 +40,17 @@ public record CatalogTable(String name, List<Column> columns) implements Seriali
   }
 
   public enum DataType {
-    BOOLEAN, INT, LONG, FLOAT, DOUBLE, STRING, BYTES, DECIMAL, DATE, TIME, TIMESTAMP
+    BOOLEAN,
+    INT,
+    LONG,
+    FLOAT,
+    DOUBLE,
+    STRING,
+    BYTES,
+    DECIMAL,
+    DATE,
+    TIME,
+    TIMESTAMP
   }
 
   public record Column(String name, DataType type, boolean nullable) implements Serializable {

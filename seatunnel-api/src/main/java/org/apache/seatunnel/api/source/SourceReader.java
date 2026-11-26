@@ -17,8 +17,8 @@
 package org.apache.seatunnel.api.source;
 
 import java.util.List;
-import org.apache.seatunnel.api.state.Checkpointed;
 import org.apache.seatunnel.api.state.CheckpointState;
+import org.apache.seatunnel.api.state.Checkpointed;
 import org.apache.seatunnel.api.table.SeaTunnelRow;
 
 /** Single-thread-confined reader. Restore state is supplied by the source factory. */
