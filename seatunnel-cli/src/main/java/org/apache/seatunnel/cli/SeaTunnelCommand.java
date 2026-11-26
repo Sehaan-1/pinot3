@@ -79,6 +79,11 @@ public final class SeaTunnelCommand implements Callable<Integer> {
             arguments,
             new OutputStreamWriter(System.out, StandardCharsets.UTF_8),
             new OutputStreamWriter(System.err, StandardCharsets.UTF_8));
+    if (code == 0 && System.out.checkError()) {
+      // PrintStream swallows IOExceptions; do not report success after a broken stdout write.
+      System.err.println("Job failed: standard output write failed");
+      code = 1;
+    }
     System.exit(code);
   }
 }

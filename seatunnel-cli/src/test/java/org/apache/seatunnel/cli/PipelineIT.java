@@ -107,6 +107,34 @@ class PipelineIT {
   }
 
   @Test
+  void stdoutDeviceFailureIsNotSilentlyReportedAsSuccess() throws Exception {
+    Path full = Path.of("/dev/full");
+    org.junit.jupiter.api.Assumptions.assumeTrue(Files.exists(full), "Requires /dev/full");
+    Path config = temporary.resolve("output-failure.conf");
+    Files.writeString(config, "source.plugin=fake\nsink.plugin=console");
+    Path errors = temporary.resolve("output-failure.txt");
+    Process process =
+        new ProcessBuilder(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-jar",
+                Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toAbsolutePath().toString(),
+                "--config",
+                config.toString())
+            .redirectOutput(full.toFile())
+            .redirectError(errors.toFile())
+            .start();
+    try {
+      assertThat(process.waitFor(30, TimeUnit.SECONDS)).isTrue();
+      assertThat(process.exitValue()).isEqualTo(1);
+      assertThat(Files.readString(errors)).contains("standard output write failed");
+    } finally {
+      if (process.isAlive()) {
+        process.destroyForcibly().waitFor();
+      }
+    }
+  }
+
+  @Test
   void helpVersionAndUsageAreAvailableFromThePackagedArtifact() throws Exception {
     assertThat(run(null, "--help").code()).isZero();
     assertThat(run(null, "--version").output()).contains("SeaTunnel local baseline");

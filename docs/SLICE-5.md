@@ -83,7 +83,9 @@ java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar \
 Unit tests cover config, factory validation, split/reader restore, output failures,
 non-ownership of output and runner cleanup/error/interrupt paths. Failsafe E2E tests
 fork the packaged CLI JAR and check exact rows, empty input, help, invalid config,
-unknown plugins and nonzero exits. The sandbox has no JDK/Maven Central access;
+unknown plugins and nonzero exits. A Linux `/dev/full` subprocess test verifies
+that Java PrintStream errors cannot silently produce a success exit; it is skipped
+on systems without that device. The sandbox has no JDK/Maven Central access;
 executable verification is performed on JDK 17 GitHub Actions.
 
 ## Three-line handoff
