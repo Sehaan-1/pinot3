@@ -29,6 +29,98 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Temporary format application
+        run: |
+          set +e
+          ./mvnw -B -ntp spotless:apply > formatter.log 2>&1
+          status=$?
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          text = '\n'.join(Path('formatter.log').read_text().splitlines()[-70:])
+          if '[ERROR]' in text:
+              for index in range(0, len(text), 2500):
+                  part = text[index:index + 2500]
+                  print(f'::error title=Format {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PYCODE
+          exit "$status"
+
+      - name: Temporary formatting patch worker-main
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-engine/src/main/java/org/apache/seatunnel/engine/task', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/plan'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=worker-main patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch job-main
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-engine/src/main/java/org/apache/seatunnel/engine/cluster/JobExecution.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=job-main patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch cluster-main
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-engine/src/main/java/org/apache/seatunnel/engine/cluster/EngineNode.java', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/cluster/EngineSettings.java', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/cluster/MasterService.java', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/cluster/RemoteTask.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=cluster-main patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch worker-test
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-engine/src/test/java/org/apache/seatunnel/engine/task'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=worker-test patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch job-test
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-engine/src/test/java/org/apache/seatunnel/engine/cluster/JobExecutionTest.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=job-test patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch cluster-test
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-engine/src/test/java/org/apache/seatunnel/engine/cluster/ClusterExecutionIT.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=cluster-test patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Verify engine cluster and task execution
+        run: |
+          set +e
+          ./mvnw -pl seatunnel-engine -am verify > engine.log 2>&1
+          status=$?
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          lines = Path('engine.log').read_text().splitlines()
+          errors = [line for line in lines if '[ERROR]' in line or '<<< FAILURE' in line or '<<< ERROR' in line]
+          text = '\n'.join(errors[-65:] if errors else lines[-60:])
+          if errors:
+              for index in range(0, len(text), 2500):
+                  part = text[index:index + 2500]
+                  print(f'::error title=Engine {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PYCODE
+          exit "$status"
+
       - name: Test engine planning contracts
         run: ./mvnw -pl seatunnel-engine -am test
 

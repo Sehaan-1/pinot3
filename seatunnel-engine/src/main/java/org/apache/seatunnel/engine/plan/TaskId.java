@@ -16,11 +16,12 @@
  */
 package org.apache.seatunnel.engine.plan;
 
+import java.io.Serializable;
 import java.util.Objects;
 import org.apache.seatunnel.engine.dag.PlanValidationException;
 
 /** Stable operator-local subtask identity; not a network or attempt identifier. */
-public record TaskId(String operatorId, int subtaskIndex) {
+public record TaskId(String operatorId, int subtaskIndex) implements Serializable {
   public TaskId {
     if (Objects.requireNonNull(operatorId, "operatorId").isBlank() || subtaskIndex < 0) {
       throw new PlanValidationException("Task requires a nonblank operator and nonnegative index");
