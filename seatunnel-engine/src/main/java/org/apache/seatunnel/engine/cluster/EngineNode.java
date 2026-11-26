@@ -45,12 +45,13 @@ public final class EngineNode implements Closeable {
     return start(settings, new SimpleMeterRegistry(), true);
   }
 
-  public static EngineNode start(EngineSettings settings, MeterRegistry registry) throws IOException {
+  public static EngineNode start(EngineSettings settings, MeterRegistry registry)
+      throws IOException {
     return start(settings, registry, false);
   }
 
-  private static EngineNode start(EngineSettings settings, MeterRegistry registry, boolean ownRegistry)
-      throws IOException {
+  private static EngineNode start(
+      EngineSettings settings, MeterRegistry registry, boolean ownRegistry) throws IOException {
     Objects.requireNonNull(settings, "settings");
     Objects.requireNonNull(registry, "registry");
     Closer closer = Closer.create();
@@ -76,15 +77,25 @@ public final class EngineNode implements Closeable {
       join.getAutoDetectionConfig().setEnabled(false);
       join.getMulticastConfig().setEnabled(false);
       join.getTcpIpConfig().setEnabled(true).setMembers(settings.seeds());
-      config.addExecutorConfig(new ExecutorConfig(MasterService.EXECUTOR_NAME)
-          .setPoolSize(settings.workerThreads()).setQueueCapacity(settings.queueCapacity()));
+      config.addExecutorConfig(
+          new ExecutorConfig(MasterService.EXECUTOR_NAME)
+              .setPoolSize(settings.workerThreads())
+              .setQueueCapacity(settings.queueCapacity()));
       HazelcastInstance member = Hazelcast.newHazelcastInstance(config);
       closer.register((Closeable) member::shutdown);
-      TaskExecutionService worker = new TaskExecutionService(member.getCluster().getLocalMember().getUuid(),
-          member, settings.workerThreads(), settings.queueCapacity(), settings.shutdownTimeout(), registry);
+      TaskExecutionService worker =
+          new TaskExecutionService(
+              member.getCluster().getLocalMember().getUuid(),
+              member,
+              settings.workerThreads(),
+              settings.queueCapacity(),
+              settings.shutdownTimeout(),
+              registry);
       closer.register((Closeable) worker::close);
       member.getUserContext().put(TaskExecutionService.CONTEXT_KEY, worker);
-      closer.register((Closeable) () -> member.getUserContext().remove(TaskExecutionService.CONTEXT_KEY, worker));
+      closer.register(
+          (Closeable)
+              () -> member.getUserContext().remove(TaskExecutionService.CONTEXT_KEY, worker));
       MasterService master = new MasterService(member, settings.maxJobs());
       closer.register((Closeable) master::close);
       return new EngineNode(member, master, closer);

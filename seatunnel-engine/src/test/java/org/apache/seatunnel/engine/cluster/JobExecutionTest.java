@@ -39,7 +39,8 @@ class JobExecutionTest {
     UUID job = UUID.randomUUID();
     TaskId id = new TaskId("source", 0);
     TaskOutcome result = new TaskOutcome(new TaskKey(job, id), UUID.randomUUID());
-    try (var execution = new JobExecution(job, Map.of(id, CompletableFuture.completedFuture(result)))) {
+    try (var execution =
+        new JobExecution(job, Map.of(id, CompletableFuture.completedFuture(result)))) {
       assertThat(execution.status()).isEqualTo(JobExecution.Status.SUCCEEDED);
       assertThat(execution.await(Duration.ofSeconds(1))).containsExactly(result);
       assertThat(execution.cancel()).isFalse();
@@ -58,7 +59,8 @@ class JobExecutionTest {
     futures.put(new TaskId("b", 0), failed);
     try (var job = new JobExecution(UUID.randomUUID(), futures)) {
       assertThatThrownBy(() -> job.await(Duration.ofSeconds(1)))
-          .isInstanceOf(ExecutionException.class).hasCauseInstanceOf(IllegalStateException.class);
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(IllegalStateException.class);
       assertThat(job.status()).isEqualTo(JobExecution.Status.FAILED);
       assertThat(pending.isCancelled()).isTrue();
     }
@@ -68,7 +70,8 @@ class JobExecutionTest {
   void timeoutAndCloseCancelOutstandingWork() {
     CompletableFuture<TaskOutcome> pending = new CompletableFuture<>();
     try (var job = new JobExecution(UUID.randomUUID(), Map.of(new TaskId("s", 0), pending))) {
-      assertThatThrownBy(() -> job.await(Duration.ofMillis(50))).isInstanceOf(TimeoutException.class);
+      assertThatThrownBy(() -> job.await(Duration.ofMillis(50)))
+          .isInstanceOf(TimeoutException.class);
       assertThat(job.status()).isEqualTo(JobExecution.Status.TIMED_OUT);
       assertThat(pending.isCancelled()).isTrue();
     }
@@ -78,7 +81,8 @@ class JobExecutionTest {
     job.close();
     assertThat(another.isCancelled()).isTrue();
     assertThat(job.status()).isEqualTo(JobExecution.Status.CANCELLED);
-    assertThatThrownBy(() -> job.await(Duration.ofSeconds(1))).isInstanceOf(CancellationException.class);
+    assertThatThrownBy(() -> job.await(Duration.ofSeconds(1)))
+        .isInstanceOf(CancellationException.class);
   }
 
   @Test
@@ -87,21 +91,33 @@ class JobExecutionTest {
     try (var job = new JobExecution(UUID.randomUUID(), Map.of(new TaskId("s", 0), pending))) {
       Thread.currentThread().interrupt();
       try {
-        assertThatThrownBy(() -> job.await(Duration.ofSeconds(1))).isInstanceOf(InterruptedException.class);
+        assertThatThrownBy(() -> job.await(Duration.ofSeconds(1)))
+            .isInstanceOf(InterruptedException.class);
         assertThat(Thread.currentThread().isInterrupted()).isTrue();
         assertThat(pending.isCancelled()).isTrue();
-      } finally { Thread.interrupted(); }
+      } finally {
+        Thread.interrupted();
+      }
     }
   }
 
   @Test
   void validatesTimeoutAndMemberSettings() {
-    try (var job = new JobExecution(UUID.randomUUID(), Map.of(new TaskId("s", 0), new CompletableFuture<>()))) {
-      assertThatThrownBy(() -> job.await(Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+    try (var job =
+        new JobExecution(
+            UUID.randomUUID(), Map.of(new TaskId("s", 0), new CompletableFuture<>()))) {
+      assertThatThrownBy(() -> job.await(Duration.ZERO))
+          .isInstanceOf(IllegalArgumentException.class);
     }
-    assertThatThrownBy(() -> new EngineSettings("", "127.0.0.1", 0, java.util.List.of(), 1, 1, 1, Duration.ofSeconds(1)))
+    assertThatThrownBy(
+            () ->
+                new EngineSettings(
+                    "", "127.0.0.1", 0, java.util.List.of(), 1, 1, 1, Duration.ofSeconds(1)))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> new EngineSettings("test", "127.0.0.1", -1, java.util.List.of(), 1, 1, 1, Duration.ofSeconds(1)))
+    assertThatThrownBy(
+            () ->
+                new EngineSettings(
+                    "test", "127.0.0.1", -1, java.util.List.of(), 1, 1, 1, Duration.ofSeconds(1)))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

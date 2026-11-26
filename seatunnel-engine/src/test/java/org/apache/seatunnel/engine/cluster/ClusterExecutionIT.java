@@ -64,10 +64,13 @@ class ClusterExecutionIT {
     try {
       leader = EngineNode.start(settings(List.of()), leaderMetrics);
       worker = EngineNode.start(settings(List.of(seed())), workerMetrics);
-      await().atMost(WAIT).untilAsserted(() -> {
-        assertThat(leader.member().getCluster().getMembers()).hasSize(2);
-        assertThat(worker.member().getCluster().getMembers()).hasSize(2);
-      });
+      await()
+          .atMost(WAIT)
+          .untilAsserted(
+              () -> {
+                assertThat(leader.member().getCluster().getMembers()).hasSize(2);
+                assertThat(worker.member().getCluster().getMembers()).hasSize(2);
+              });
     } catch (Throwable failure) {
       stopMembers();
       throw failure;
@@ -81,23 +84,35 @@ class ClusterExecutionIT {
   @AfterAll
   static void stopMembers() throws Exception {
     try {
-      if (worker != null) { worker.close(); }
+      if (worker != null) {
+        worker.close();
+      }
     } finally {
       try {
-        if (leader != null) { leader.close(); }
+        if (leader != null) {
+          leader.close();
+        }
       } finally {
-        if (workerMetrics != null) { workerMetrics.close(); }
-        if (leaderMetrics != null) { leaderMetrics.close(); }
+        if (workerMetrics != null) {
+          workerMetrics.close();
+        }
+        if (leaderMetrics != null) {
+          leaderMetrics.close();
+        }
       }
     }
   }
 
   private PhysicalPlan plan() {
-    CatalogTable table = new CatalogTable("events", List.of(new Column("id", DataType.LONG, false)));
-    return new PhysicalPlanner().plan(new LogicalDag(List.of(
-        new LogicalNode("s", LogicalNode.Kind.SOURCE, "test-source", 1, table),
-        new LogicalNode("t", LogicalNode.Kind.SINK, "test-sink", 1, table)),
-        List.of(new LogicalEdge("s", "t", LogicalEdge.Exchange.FORWARD))));
+    CatalogTable table =
+        new CatalogTable("events", List.of(new Column("id", DataType.LONG, false)));
+    return new PhysicalPlanner()
+        .plan(
+            new LogicalDag(
+                List.of(
+                    new LogicalNode("s", LogicalNode.Kind.SOURCE, "test-source", 1, table),
+                    new LogicalNode("t", LogicalNode.Kind.SINK, "test-sink", 1, table)),
+                List.of(new LogicalEdge("s", "t", LogicalEdge.Exchange.FORWARD))));
   }
 
   private Map<TaskId, EngineTask> bindings(EngineTask task) {
@@ -112,7 +127,9 @@ class ClusterExecutionIT {
     @Override
     public void run(TaskContext context) {
       long sum = 0;
-      for (int i = 0; i < 1000; i++) { sum += i; }
+      for (int i = 0; i < 1000; i++) {
+        sum += i;
+      }
       context.cluster().getMap(resultMap).put(context.key().taskId(), sum);
     }
   }
@@ -122,14 +139,19 @@ class ClusterExecutionIT {
     public void run(TaskContext context) throws Exception {
       var queue = context.cluster().<String>getQueue(signals);
       queue.put("started");
-      try { Thread.sleep(TimeUnit.MINUTES.toMillis(1)); }
-      finally { queue.offer("stopped"); }
+      try {
+        Thread.sleep(TimeUnit.MINUTES.toMillis(1));
+      } finally {
+        queue.offer("stopped");
+      }
     }
   }
 
   private record FailingTask() implements EngineTask {
     @Override
-    public void run(TaskContext context) { throw new IllegalStateException("intentional remote failure"); }
+    public void run(TaskContext context) {
+      throw new IllegalStateException("intentional remote failure");
+    }
   }
 
   @Test
@@ -138,12 +160,20 @@ class ClusterExecutionIT {
     try (var job = leader.master().submit(plan(), bindings(new RecordTask(map)), workerId())) {
       var outcomes = job.await(WAIT);
       assertThat(outcomes).hasSize(2);
-      assertThat(outcomes).allSatisfy(result -> assertThat(result.workerId()).isEqualTo(workerId()));
-      assertThat(leader.member().getMap(map)).hasSize(2).containsValue(499500L);
+      assertThat(outcomes)
+          .allSatisfy(result -> assertThat(result.workerId()).isEqualTo(workerId()));
+      Map<TaskId, Long> actual = leader.member().getMap(map);
+      assertThat(actual).hasSize(2).containsValue(499500L);
       assertThat(job.status()).isEqualTo(JobExecution.Status.SUCCEEDED);
-      await().atMost(WAIT).untilAsserted(() ->
-          assertThat(workerMetrics.get("seatunnel.task.succeeded").counter().count()).isGreaterThanOrEqualTo(2));
-    } finally { leader.member().getMap(map).destroy(); }
+      await()
+          .atMost(WAIT)
+          .untilAsserted(
+              () ->
+                  assertThat(workerMetrics.get("seatunnel.task.succeeded").counter().count())
+                      .isGreaterThanOrEqualTo(2));
+    } finally {
+      leader.member().getMap(map).destroy();
+    }
   }
 
   @Test
@@ -152,11 +182,14 @@ class ClusterExecutionIT {
     assertThat(worker.master().isLeader()).isFalse();
     var tasks = bindings(new RecordTask("unused"));
     assertThatThrownBy(() -> worker.master().submit(plan(), tasks))
-        .isInstanceOf(IllegalStateException.class).hasMessageContaining("oldest");
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("oldest");
     assertThatThrownBy(() -> leader.master().submit(plan(), Map.of()))
-        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Bindings");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Bindings");
     assertThatThrownBy(() -> leader.master().submit(plan(), tasks, UUID.randomUUID()))
-        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Unknown engine worker");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unknown engine worker");
   }
 
   @Test
@@ -167,37 +200,47 @@ class ClusterExecutionIT {
     var queue = leader.member().<String>getQueue(signals);
     try (var job = leader.master().submit(plan(), tasks, workerId())) {
       assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("started");
-      assertThatThrownBy(() -> job.await(WAIT)).isInstanceOf(ExecutionException.class)
+      assertThatThrownBy(() -> job.await(WAIT))
+          .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(IllegalStateException.class);
       assertThat(job.status()).isEqualTo(JobExecution.Status.FAILED);
       assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("stopped");
-    } finally { queue.destroy(); }
+    } finally {
+      queue.destroy();
+    }
   }
 
   @Test
   void cancelsRemoteWorkAndEnforcesMasterAdmissionLimit() throws Exception {
     String signals = "cancel-" + UUID.randomUUID();
     var queue = leader.member().<String>getQueue(signals);
-    try (var job = leader.master().submit(plan(), bindings(new BlockingTask(signals)), workerId())) {
+    try (var job =
+        leader.master().submit(plan(), bindings(new BlockingTask(signals)), workerId())) {
       assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("started");
       assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("started");
       assertThatThrownBy(() -> leader.master().submit(plan(), bindings(new RecordTask("unused"))))
-          .isInstanceOf(RejectedExecutionException.class).hasMessageContaining("admission");
+          .isInstanceOf(RejectedExecutionException.class)
+          .hasMessageContaining("admission");
       assertThat(job.cancel()).isTrue();
       assertThat(job.status()).isEqualTo(JobExecution.Status.CANCELLED);
       assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("stopped");
       assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("stopped");
-    } finally { queue.destroy(); }
+    } finally {
+      queue.destroy();
+    }
   }
 
   @Test
-  void workerDepartureFailsItsJobWithoutShuttingDownOtherMembersOrCallerRegistry() throws Exception {
+  void workerDepartureFailsItsJobWithoutShuttingDownOtherMembersOrCallerRegistry()
+      throws Exception {
     SimpleMeterRegistry metrics = new SimpleMeterRegistry();
     EngineNode departing = EngineNode.start(settings(List.of(seed())), metrics);
     String signals = "departure-" + UUID.randomUUID();
     var queue = leader.member().<String>getQueue(signals);
     try {
-      await().atMost(WAIT).untilAsserted(() -> assertThat(leader.member().getCluster().getMembers()).hasSize(3));
+      await()
+          .atMost(WAIT)
+          .untilAsserted(() -> assertThat(leader.member().getCluster().getMembers()).hasSize(3));
       UUID target = departing.member().getCluster().getLocalMember().getUuid();
       try (var job = leader.master().submit(plan(), bindings(new BlockingTask(signals)), target)) {
         assertThat(queue.poll(20, TimeUnit.SECONDS)).isEqualTo("started");

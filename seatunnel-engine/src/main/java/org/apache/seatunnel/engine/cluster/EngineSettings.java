@@ -20,17 +20,30 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
-/** Explicit TCP member settings. Port zero requests an ephemeral port, useful for embedded callers. */
-public record EngineSettings(String clusterName, String bindAddress, int port, List<String> seeds,
-    int workerThreads, int queueCapacity, int maxJobs, Duration shutdownTimeout) {
+/**
+ * Explicit TCP member settings. Port zero requests an ephemeral port, useful for embedded callers.
+ */
+public record EngineSettings(
+    String clusterName,
+    String bindAddress,
+    int port,
+    List<String> seeds,
+    int workerThreads,
+    int queueCapacity,
+    int maxJobs,
+    Duration shutdownTimeout) {
   public EngineSettings {
     if (Objects.requireNonNull(clusterName, "clusterName").isBlank()
         || Objects.requireNonNull(bindAddress, "bindAddress").isBlank()) {
       throw new IllegalArgumentException("Cluster name and bind address must not be blank");
     }
     seeds = List.copyOf(seeds);
-    if (seeds.stream().anyMatch(String::isBlank) || port < 0 || port > 65535
-        || workerThreads <= 0 || queueCapacity <= 0 || maxJobs <= 0) {
+    if (seeds.stream().anyMatch(String::isBlank)
+        || port < 0
+        || port > 65535
+        || workerThreads <= 0
+        || queueCapacity <= 0
+        || maxJobs <= 0) {
       throw new IllegalArgumentException("Invalid member port, seeds or execution bounds");
     }
     if (shutdownTimeout.isNegative() || shutdownTimeout.isZero()) {

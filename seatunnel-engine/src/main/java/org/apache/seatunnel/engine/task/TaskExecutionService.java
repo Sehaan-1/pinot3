@@ -58,9 +58,17 @@ public final class TaskExecutionService implements AutoCloseable {
   private final Timer duration;
   private boolean closed;
 
-  /** A null cluster is permitted for standalone local task execution; cluster tasks require a member. */
-  public TaskExecutionService(UUID workerId, HazelcastInstance cluster, int threads, int queueCapacity,
-      Duration shutdownTimeout, MeterRegistry registry) {
+  /**
+   * A null cluster is permitted for standalone local task execution; cluster tasks require a
+   * member.
+   */
+  public TaskExecutionService(
+      UUID workerId,
+      HazelcastInstance cluster,
+      int threads,
+      int queueCapacity,
+      Duration shutdownTimeout,
+      MeterRegistry registry) {
     if (threads <= 0 || queueCapacity <= 0) {
       throw new IllegalArgumentException("Worker threads and queue capacity must be positive");
     }
@@ -73,26 +81,42 @@ public final class TaskExecutionService implements AutoCloseable {
     this.shutdownTimeout = shutdownTimeout;
     this.registry = Objects.requireNonNull(registry, "registry");
     AtomicInteger sequence = new AtomicInteger();
-    executor = new ThreadPoolExecutor(threads, threads, 0, TimeUnit.MILLISECONDS,
-        new ArrayBlockingQueue<>(queueCapacity), runnable -> new Thread(runnable,
-            "seatunnel-task-" + workerId + "-" + sequence.incrementAndGet()),
-        new ThreadPoolExecutor.AbortPolicy());
+    executor =
+        new ThreadPoolExecutor(
+            threads,
+            threads,
+            0,
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(queueCapacity),
+            runnable ->
+                new Thread(
+                    runnable, "seatunnel-task-" + workerId + "-" + sequence.incrementAndGet()),
+            new ThreadPoolExecutor.AbortPolicy());
     submitted = counter("submitted");
     succeeded = counter("succeeded");
     failed = counter("failed");
     cancelled = counter("cancelled");
     rejected = counter("rejected");
-    duration = Timer.builder("seatunnel.task.duration").tag("worker", workerId.toString()).register(registry);
+    duration =
+        Timer.builder("seatunnel.task.duration")
+            .tag("worker", workerId.toString())
+            .register(registry);
     meters.add(duration);
-    meters.add(Gauge.builder("seatunnel.task.active", executor, ThreadPoolExecutor::getActiveCount)
-        .tag("worker", workerId.toString()).register(registry));
-    meters.add(Gauge.builder("seatunnel.task.queued", executor, pool -> pool.getQueue().size())
-        .tag("worker", workerId.toString()).register(registry));
+    meters.add(
+        Gauge.builder("seatunnel.task.active", executor, ThreadPoolExecutor::getActiveCount)
+            .tag("worker", workerId.toString())
+            .register(registry));
+    meters.add(
+        Gauge.builder("seatunnel.task.queued", executor, pool -> pool.getQueue().size())
+            .tag("worker", workerId.toString())
+            .register(registry));
   }
 
   private Counter counter(String name) {
-    Counter counter = Counter.builder("seatunnel.task." + name)
-        .tag("worker", workerId.toString()).register(registry);
+    Counter counter =
+        Counter.builder("seatunnel.task." + name)
+            .tag("worker", workerId.toString())
+            .register(registry);
     meters.add(counter);
     return counter;
   }
@@ -131,15 +155,16 @@ public final class TaskExecutionService implements AutoCloseable {
     private volatile boolean started;
 
     Work(TaskKey key, EngineTask task) {
-      super(() -> {
-        long started = System.nanoTime();
-        try {
-          task.run(new TaskContext(key, workerId, cluster));
-          return new TaskOutcome(key, workerId);
-        } finally {
-          duration.record(System.nanoTime() - started, TimeUnit.NANOSECONDS);
-        }
-      });
+      super(
+          () -> {
+            long started = System.nanoTime();
+            try {
+              task.run(new TaskContext(key, workerId, cluster));
+              return new TaskOutcome(key, workerId);
+            } finally {
+              duration.record(System.nanoTime() - started, TimeUnit.NANOSECONDS);
+            }
+          });
       this.key = key;
     }
 
@@ -191,7 +216,8 @@ public final class TaskExecutionService implements AutoCloseable {
     }
     try {
       if (!executor.awaitTermination(shutdownTimeout.toNanos(), TimeUnit.NANOSECONDS)) {
-        throw new IllegalStateException("Worker tasks did not terminate cooperatively: " + workerId);
+        throw new IllegalStateException(
+            "Worker tasks did not terminate cooperatively: " + workerId);
       }
     } catch (InterruptedException interrupted) {
       Thread.currentThread().interrupt();

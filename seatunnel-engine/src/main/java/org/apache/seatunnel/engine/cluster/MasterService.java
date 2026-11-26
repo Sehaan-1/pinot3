@@ -50,7 +50,12 @@ public final class MasterService implements AutoCloseable {
   }
 
   public boolean isLeader() {
-    return member.getCluster().getMembers().iterator().next().getUuid()
+    return member
+        .getCluster()
+        .getMembers()
+        .iterator()
+        .next()
+        .getUuid()
         .equals(member.getCluster().getLocalMember().getUuid());
   }
 
@@ -59,7 +64,8 @@ public final class MasterService implements AutoCloseable {
   }
 
   /** Optional pinned placement; otherwise Hazelcast chooses an engine worker. */
-  public synchronized JobExecution submit(PhysicalPlan plan, Map<TaskId, EngineTask> bindings, UUID targetId) {
+  public synchronized JobExecution submit(
+      PhysicalPlan plan, Map<TaskId, EngineTask> bindings, UUID targetId) {
     if (closed) {
       throw new RejectedExecutionException("Master service is closed");
     }
@@ -68,14 +74,20 @@ public final class MasterService implements AutoCloseable {
     }
     Objects.requireNonNull(plan, "plan");
     Map<TaskId, EngineTask> tasks = Map.copyOf(bindings);
-    List<TaskId> expected = plan.taskGroups().stream().flatMap(group -> group.tasks().stream()).toList();
+    List<TaskId> expected =
+        plan.taskGroups().stream().flatMap(group -> group.tasks().stream()).toList();
     if (tasks.size() != expected.size() || !tasks.keySet().containsAll(expected)) {
       throw new IllegalArgumentException("Bindings must match every physical task exactly");
     }
-    Member target = targetId == null ? null : member.getCluster().getMembers().stream()
-        .filter(worker -> worker.getUuid().equals(targetId))
-        .filter(worker -> "true".equals(worker.getAttribute(WORKER_ATTRIBUTE)))
-        .findFirst().orElseThrow(() -> new IllegalArgumentException("Unknown engine worker: " + targetId));
+    Member target =
+        targetId == null
+            ? null
+            : member.getCluster().getMembers().stream()
+                .filter(worker -> worker.getUuid().equals(targetId))
+                .filter(worker -> "true".equals(worker.getAttribute(WORKER_ATTRIBUTE)))
+                .findFirst()
+                .orElseThrow(
+                    () -> new IllegalArgumentException("Unknown engine worker: " + targetId));
     jobs.removeIf(job -> job.status() != JobExecution.Status.RUNNING);
     if (jobs.size() >= maxJobs) {
       throw new RejectedExecutionException("Master job admission limit reached");
@@ -85,9 +97,11 @@ public final class MasterService implements AutoCloseable {
     try {
       for (TaskId id : expected) {
         RemoteTask task = new RemoteTask(new TaskKey(jobId, id), tasks.get(id));
-        Future<TaskOutcome> future = target == null
-            ? executor.submit(task, worker -> "true".equals(worker.getAttribute(WORKER_ATTRIBUTE)))
-            : executor.submitToMember(task, target);
+        Future<TaskOutcome> future =
+            target == null
+                ? executor.submit(
+                    task, worker -> "true".equals(worker.getAttribute(WORKER_ATTRIBUTE)))
+                : executor.submitToMember(task, target);
         submitted.put(id, future);
       }
       JobExecution job = new JobExecution(jobId, submitted);

@@ -30,9 +30,18 @@ import java.util.concurrent.TimeoutException;
 import org.apache.seatunnel.engine.plan.TaskId;
 import org.apache.seatunnel.engine.task.TaskOutcome;
 
-/** Owned Future-like handle. Completion/failure is observed by status or await, not a hidden thread. */
+/**
+ * Owned Future-like handle. Completion/failure is observed by status or await, not a hidden thread.
+ */
 public final class JobExecution implements AutoCloseable {
-  public enum Status { RUNNING, SUCCEEDED, FAILED, CANCELLED, TIMED_OUT }
+  public enum Status {
+    RUNNING,
+    SUCCEEDED,
+    FAILED,
+    CANCELLED,
+    TIMED_OUT
+  }
+
   private final UUID jobId;
   private final Map<TaskId, Future<TaskOutcome>> futures;
   private Status status = Status.RUNNING;
@@ -115,11 +124,16 @@ public final class JobExecution implements AutoCloseable {
         synchronized (this) {
           refresh();
           switch (status) {
-            case SUCCEEDED: return results;
-            case FAILED: throw new ExecutionException(failure);
-            case CANCELLED: throw new CancellationException("Job cancelled: " + jobId);
-            case TIMED_OUT: throw new TimeoutException("Job timed out: " + jobId);
-            default: break;
+            case SUCCEEDED:
+              return results;
+            case FAILED:
+              throw new ExecutionException(failure);
+            case CANCELLED:
+              throw new CancellationException("Job cancelled: " + jobId);
+            case TIMED_OUT:
+              throw new TimeoutException("Job timed out: " + jobId);
+            default:
+              break;
           }
           if (budget - (System.nanoTime() - started) <= 0) {
             TimeoutException expired = new TimeoutException("Job timed out: " + jobId);
@@ -133,7 +147,8 @@ public final class JobExecution implements AutoCloseable {
           if (!future.isDone()) {
             long remaining = budget - (System.nanoTime() - started);
             try {
-              future.get(Math.max(1, Math.min(remaining, TimeUnit.MILLISECONDS.toNanos(50))),
+              future.get(
+                  Math.max(1, Math.min(remaining, TimeUnit.MILLISECONDS.toNanos(50))),
                   TimeUnit.NANOSECONDS);
             } catch (TimeoutException | ExecutionException | CancellationException observed) {
               // Refresh all tasks before waiting again, including failures on other members.

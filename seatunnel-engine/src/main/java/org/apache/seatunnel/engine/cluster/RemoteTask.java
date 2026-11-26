@@ -57,7 +57,8 @@ final class RemoteTask implements Callable<TaskOutcome>, Serializable, Hazelcast
       Thread.currentThread().interrupt();
       throw interrupted;
     } catch (CancellationException cancelled) {
-      throw new IllegalStateException("Worker task was cancelled or worker is shutting down", cancelled);
+      throw new IllegalStateException(
+          "Worker task was cancelled or worker is shutting down", cancelled);
     } catch (ExecutionException failure) {
       Throwable cause = failure.getCause();
       if (cause instanceof Exception exception) {
