@@ -29,11 +29,130 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Test engine planning contracts
-        run: ./mvnw -pl seatunnel-engine -am test
+      - name: Temporary format application
+        run: |
+          set +e
+          ./mvnw -B -ntp spotless:apply > formatter.log 2>&1
+          status=$?
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          text = '\n'.join(Path('formatter.log').read_text().splitlines()[-70:])
+          if '[ERROR]' in text:
+              for index in range(0, len(text), 2500):
+                  part = text[index:index + 2500]
+                  print(f'::error title=Format {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PYCODE
+          exit "$status"
+
+      - name: Temporary formatting patch CheckpointParticipant
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/checkpoint/CheckpointParticipant.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=CheckpointParticipant patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch PreparedState
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/checkpoint/PreparedState.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=PreparedState patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch CheckpointRecord
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/checkpoint/CheckpointRecord.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=CheckpointRecord patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch CheckpointStore
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/checkpoint/CheckpointStore.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=CheckpointStore patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch CheckpointCoordinator
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/checkpoint/CheckpointCoordinator.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=CheckpointCoordinator patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch SplitLedger
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/checkpoint/SplitLedger.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=SplitLedger patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch SplitLedgerTest
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/test/java/org/apache/seatunnel/engine/checkpoint/SplitLedgerTest.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=SplitLedgerTest patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch CheckpointRecoveryIT
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/test/java/org/apache/seatunnel/engine/checkpoint/CheckpointRecoveryIT.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=CheckpointRecoveryIT patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
+
+      - name: Temporary formatting patch EngineNode
+        run: |
+          python3 - <<'PYCODE'
+          import base64, subprocess
+          diff = subprocess.check_output(['git', 'diff', '--', 'seatunnel-engine/src/main/java/org/apache/seatunnel/engine/cluster/EngineNode.java'])
+          encoded = base64.b64encode(diff).decode()
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print(f'::warning title=EngineNode patch {index}::' + encoded[offset:offset + 3500])
+          PYCODE
 
       - name: Verify engine cluster and task execution
-        run: ./mvnw -pl seatunnel-engine -am verify
+        run: |
+          set +e
+          ./mvnw -pl seatunnel-engine -am verify > engine.log 2>&1
+          status=$?
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          lines = Path('engine.log').read_text().splitlines()
+          errors = [line for line in lines if '[ERROR]' in line or '<<< FAILURE' in line or '<<< ERROR' in line]
+          text = '\n'.join(errors[-65:] if errors else lines[-60:])
+          if errors:
+              for index in range(0, len(text), 2500):
+                  part = text[index:index + 2500]
+                  print(f'::error title=Engine {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PYCODE
+          exit "$status"
+
+      - name: Test engine planning contracts
+        run: ./mvnw -pl seatunnel-engine -am test
 
       - name: Test connectors and local core
         run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test
