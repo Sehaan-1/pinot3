@@ -68,17 +68,7 @@ public final class PluginDiscovery<P extends Plugin> implements AutoCloseable {
     ClassLoader previous = thread.getContextClassLoader();
     try {
       thread.setContextClassLoader(loader);
-      Map<String, P> providers = new TreeMap<>();
-      for (P provider : ServiceLoader.load(service, loader)) {
-        String id = provider.identifier();
-        if (id == null || !id.matches("[a-z][a-z0-9-]*")) {
-          throw new PluginException("Invalid plugin identifier: " + id);
-        }
-        if (providers.putIfAbsent(id, provider) != null) {
-          throw new PluginException("Duplicate plugin identifier: " + id);
-        }
-      }
-      return new PluginDiscovery<>(loader, providers);
+      return new PluginDiscovery<>(loader, collect(service, loader));
     } catch (RuntimeException | Error failure) {
       try {
         loader.close();
@@ -95,6 +85,38 @@ public final class PluginDiscovery<P extends Plugin> implements AutoCloseable {
     } finally {
       thread.setContextClassLoader(previous);
     }
+  }
+
+  /** Uses the host classpath without taking ownership of its classloader. */
+  public static <P extends Plugin> PluginDiscovery<P> fromClasspath(Class<P> service) {
+    Objects.requireNonNull(service, "service");
+    if (!service.isInterface() || !Plugin.class.isAssignableFrom(service)) {
+      throw new IllegalArgumentException("Service must be a shared Plugin interface");
+    }
+    Thread thread = Thread.currentThread();
+    ClassLoader previous = thread.getContextClassLoader();
+    try {
+      thread.setContextClassLoader(service.getClassLoader());
+      return new PluginDiscovery<>(null, collect(service, service.getClassLoader()));
+    } catch (RuntimeException | java.util.ServiceConfigurationError | LinkageError failure) {
+      throw new PluginException("Failed to discover " + service.getName(), failure);
+    } finally {
+      thread.setContextClassLoader(previous);
+    }
+  }
+
+  private static <P extends Plugin> Map<String, P> collect(Class<P> service, ClassLoader loader) {
+    Map<String, P> providers = new TreeMap<>();
+    for (P provider : ServiceLoader.load(service, loader)) {
+      String id = provider.identifier();
+      if (id == null || !id.matches("[a-z][a-z0-9-]*")) {
+        throw new PluginException("Invalid plugin identifier: " + id);
+      }
+      if (providers.putIfAbsent(id, provider) != null) {
+        throw new PluginException("Duplicate plugin identifier: " + id);
+      }
+    }
+    return providers;
   }
 
   public synchronized List<String> identifiers() {
@@ -123,7 +145,9 @@ public final class PluginDiscovery<P extends Plugin> implements AutoCloseable {
     if (!closed) {
       closed = true;
       providers.clear();
-      loader.close();
+      if (loader != null) {
+        loader.close();
+      }
     }
   }
 }

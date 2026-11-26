@@ -29,14 +29,14 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Test common and config contracts
-        run: ./mvnw -pl seatunnel-common,seatunnel-config -am test
+      - name: Test connectors and local core
+        run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test
 
-      - name: Test API contracts
-        run: ./mvnw -pl seatunnel-api -am test
+      - name: Verify runnable CLI and E2E
+        run: ./mvnw -pl seatunnel-cli -am verify
 
-      - name: Test plugin discovery and formats
-        run: ./mvnw -pl seatunnel-plugin-discovery,seatunnel-formats -am test
+      - name: Run documented local example
+        run: java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar --config examples/fake-to-console.conf --mode local
 
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify
@@ -46,5 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: '**/surefire-reports/**'
+          path: |
+            **/surefire-reports/**
+            **/failsafe-reports/**
           if-no-files-found: ignore
