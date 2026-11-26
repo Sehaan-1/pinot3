@@ -15,8 +15,8 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 1 | Build & repo scaffold (root POM, Maven wrapper, Spotless/license, CI) | ✅ Merged |
 | 2 | `seatunnel-common` + `seatunnel-config` | ✅ Merged |
 | 3 | `seatunnel-api` (engine-independent contracts) | ✅ Merged |
-| 4 | `seatunnel-plugin-discovery` + `seatunnel-formats` | In review — PR #4 |
-| 5 | `seatunnel-core` + `seatunnel-cli` + FakeSource + ConsoleSink (runnable baseline) | ⬜ |
+| 4 | `seatunnel-plugin-discovery` + `seatunnel-formats` | ✅ Merged |
+| 5 | `seatunnel-core` + `seatunnel-cli` + FakeSource + ConsoleSink (runnable baseline) | In progress |
 | 6 | `seatunnel-engine` / Zeta (DAG → Master/Worker → checkpoint → submit/REST) | ⬜ |
 | 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |
 
@@ -37,6 +37,19 @@ wrapper (`mvnw`) bootstraps Maven 3.9.9 on first run.
 # Build/test a single module and its dependencies (from Slice 2 onward)
 ./mvnw -pl <module> -am test
 ```
+
+## Run the local baseline
+
+```bash
+./mvnw -pl seatunnel-cli -am verify
+java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar \
+  --config examples/fake-to-console.conf --mode local
+```
+
+The example emits five JSON rows, IDs 10–14. This slice supports bounded local
+execution with parallelism 1 only. Console output is non-transactional; no
+exactly-once or distributed-engine support is claimed.
+See [the Slice 5 specification](docs/SLICE-5.md) for config and lifecycle contracts.
 
 ## Repository layout (planned)
 

@@ -59,9 +59,11 @@
         <module>seatunnel-api</module>
         <module>seatunnel-plugin-discovery</module>
         <module>seatunnel-formats</module>
-        <!--
         <module>seatunnel-core</module>
+        <module>connector-fake</module>
+        <module>connector-console</module>
         <module>seatunnel-cli</module>
+        <!--
         <module>seatunnel-engine</module>
         <module>seatunnel-transforms-v2</module>
         <module>seatunnel-connectors-v2</module>
@@ -107,6 +109,7 @@
 
         <!-- CLI (Slice 5) -->
         <picocli.version>4.7.6</picocli.version>
+        <shade.version>3.6.0</shade.version>
 
         <!-- Engine / Zeta (Slice 6) -->
         <hazelcast.version>5.5.0</hazelcast.version>
@@ -250,6 +253,11 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${shade.version}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
