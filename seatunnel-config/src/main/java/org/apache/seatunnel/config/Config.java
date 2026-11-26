@@ -38,8 +38,11 @@ public final class Config {
     return new Config(typesafeConfig);
   }
 
-  /** Parses the given HOCON file. */
+  /** Parses the given HOCON file. Fails fast if the file does not exist. */
   public static Config parseFile(File file) {
+    if (!file.exists()) {
+      throw new ConfigException("Config file does not exist: " + file);
+    }
     try {
       return of(ConfigFactory.parseFile(file));
     } catch (com.typesafe.config.ConfigException e) {
