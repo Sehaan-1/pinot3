@@ -29,6 +29,9 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Test common and config contracts
+        run: ./mvnw -pl seatunnel-common,seatunnel-config -am test
+
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify
 
