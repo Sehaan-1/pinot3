@@ -42,11 +42,12 @@ jobs:
       - name: Report Maven errors as annotations
         if: steps.build.outputs.exit_code != '0'
         run: |
-          echo "::error title=Diag::log lines: $(wc -l < maven.log)"
-          tail -n 55 maven.log | while IFS= read -r line; do
-            esc=$(printf '%s' "$line" | sed 's/%/%25/g' | cut -c1-400)
-            echo "::error title=Diag::$esc"
-          done
+          python3 - <<'PY'
+          from pathlib import Path
+          text = '\n'.join(Path('maven.log').read_text().splitlines()[-65:])
+          text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print('::error title=Maven verification::' + text)
+          PY
 
       - name: Fail if build failed
         if: steps.build.outputs.exit_code != '0'
