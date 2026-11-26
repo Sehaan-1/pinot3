@@ -55,7 +55,8 @@ class JsonUtilsTest {
   void roundTripPreservesData() {
     Map<String, Object> original = Map.of("name", "seatunnel", "count", 3);
     String json = JsonUtils.toJsonString(original);
-    Map<?, ?> restored = JsonUtils.fromJsonString(json, Map.class);
+    Map<String, Object> restored =
+        JsonUtils.fromJsonString(json, new TypeReference<Map<String, Object>>() {});
     Assertions.assertThat(restored).containsEntry("name", "seatunnel");
     Assertions.assertThat(restored).containsEntry("count", 3);
   }
