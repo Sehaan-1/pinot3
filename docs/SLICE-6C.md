@@ -24,13 +24,21 @@ Build only the engine-specific checkpoint state machine and split ownership ledg
   aborts all participants best-effort. After publication, failure NEVER aborts: recovery
   retries idempotent commits and completion notifications using stored handles.
 - COMMITTING -> COMPLETED is conditional replace. Checkpoint IDs must be positive and
-  strictly increasing per job; unresolved decisions block new checkpoints. Latest completed
+  strictly increasing per job, including aborted attempts. Local attempted IDs and stored
+  decision IDs are checked; after replacement the caller must supply fresh IDs, never
+  reuse aborted transaction IDs. Unresolved decisions block new checkpoints. Latest completed
   state restores participants explicitly; participant IDs must match exactly. A failed
   restore is surfaced; caller must discard partially restored operators before retry.
 - Participants own transaction semantics, operator confinement, idempotent commit/abort/
   complete and handle cleanup. This is a two-phase decision protocol, not a generic
   exactly-once guarantee for arbitrary sinks. An ambiguous decision-write failure must
   be resolved by reading the store before any abort, and unknown outcomes are surfaced.
+- A crash during preparation can leave external orphan transactions: connector/operator
+  adapters must support transaction discovery/expiry and explicit cleanup. For an uncertain
+  publication, stop submissions, establish the authoritative surviving store outcome and
+  recover a present decision; abort prepared resources only after confirmed absence. If
+  the cluster outcome is unavailable, operator intervention is required. The uncertain
+  coordinator rejects further checkpoints; replace it only after resolving the outcome.
 - IMap is replicated in memory, NOT disk-durable storage. Recovery survives coordinator
   replacement while cluster replicas survive, not total-cluster loss. No claim of durable
   API Checkpointed completion: this engine contract is separate and is not automatically

@@ -18,7 +18,6 @@ package org.apache.seatunnel.engine.checkpoint;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,14 +27,16 @@ import org.apache.seatunnel.api.source.SourceSplit;
 
 /** Caller-confined split ownership. Restoring requeues unfinished work (at-least-once). */
 public final class SplitLedger<S extends SourceSplit> {
-  public record Snapshot<S extends SourceSplit>(List<S> splits, Map<String, Integer> assigned,
-      Set<String> completed) implements Serializable {
+  public record Snapshot<S extends SourceSplit>(
+      List<S> splits, Map<String, Integer> assigned, Set<String> completed)
+      implements Serializable {
     public Snapshot {
       splits = List.copyOf(splits);
       assigned = Map.copyOf(assigned);
       completed = Set.copyOf(completed);
     }
   }
+
   private final int parallelism;
   private final Map<String, S> splits = new LinkedHashMap<>();
   private final Map<String, Integer> assigned = new LinkedHashMap<>();
@@ -50,6 +51,7 @@ public final class SplitLedger<S extends SourceSplit> {
         throw new IllegalArgumentException("blank or duplicate split ID: " + id);
     }
   }
+
   public List<S> assign(int reader, int maximum) {
     reader(reader);
     if (maximum <= 0) throw new IllegalArgumentException("positive assignment bound required");
@@ -63,6 +65,7 @@ public final class SplitLedger<S extends SourceSplit> {
     }
     return List.copyOf(result);
   }
+
   public void complete(int reader, String splitId) {
     reader(reader);
     if (!Integer.valueOf(reader).equals(assigned.get(splitId)))
@@ -70,25 +73,32 @@ public final class SplitLedger<S extends SourceSplit> {
     assigned.remove(splitId);
     completed.add(splitId);
   }
+
   public void readerFailed(int reader) {
     reader(reader);
     assigned.values().removeIf(owner -> owner == reader);
   }
+
   public Snapshot<S> snapshot() {
     return new Snapshot<>(new ArrayList<>(splits.values()), assigned, completed);
   }
+
   public static <S extends SourceSplit> SplitLedger<S> restore(int parallelism, Snapshot<S> state) {
     SplitLedger<S> ledger = new SplitLedger<>(parallelism, state.splits());
     Set<String> known = ledger.splits.keySet();
-    if (!known.containsAll(state.completed()) || !known.containsAll(state.assigned().keySet())
+    if (!known.containsAll(state.completed())
+        || !known.containsAll(state.assigned().keySet())
         || !java.util.Collections.disjoint(state.completed(), state.assigned().keySet())
-        || state.assigned().values().stream().anyMatch(reader -> reader < 0 || reader >= parallelism))
+        || state.assigned().values().stream()
+            .anyMatch(reader -> reader < 0 || reader >= parallelism))
       throw new IllegalArgumentException("Invalid split snapshot");
     ledger.completed.addAll(state.completed());
     // Deliberately discard assignments: prior readers are no longer trusted after recovery.
     return ledger;
   }
+
   private void reader(int reader) {
-    if (reader < 0 || reader >= parallelism) throw new IllegalArgumentException("Unknown reader: " + reader);
+    if (reader < 0 || reader >= parallelism)
+      throw new IllegalArgumentException("Unknown reader: " + reader);
   }
 }

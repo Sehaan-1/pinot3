@@ -20,8 +20,11 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-/** Payloads must be detached immutable serializable values, with classes installed on all members. */
-public record PreparedState(Serializable state, List<Serializable> handles) implements Serializable {
+/**
+ * Payloads must be detached immutable serializable values, with classes installed on all members.
+ */
+public record PreparedState(Serializable state, List<Serializable> handles)
+    implements Serializable {
   public PreparedState {
     Objects.requireNonNull(state, "state");
     handles = List.copyOf(handles);

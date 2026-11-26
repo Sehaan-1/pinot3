@@ -26,9 +26,11 @@ public final class CheckpointCoordinator {
   private final UUID jobId;
   private final CheckpointStore store;
   private final Map<String, CheckpointParticipant> participants;
+  private long lastAttempt;
+  private boolean publicationUncertain;
 
-  public CheckpointCoordinator(UUID jobId, CheckpointStore store,
-      Map<String, CheckpointParticipant> participants) {
+  public CheckpointCoordinator(
+      UUID jobId, CheckpointStore store, Map<String, CheckpointParticipant> participants) {
     this.jobId = Objects.requireNonNull(jobId, "jobId");
     this.store = Objects.requireNonNull(store, "store");
     this.participants = Map.copyOf(participants);
@@ -37,31 +39,41 @@ public final class CheckpointCoordinator {
   }
 
   public synchronized CheckpointRecord checkpoint(long id) throws Exception {
+    if (publicationUncertain)
+      throw new IllegalStateException("Resolve uncertain publication before replacing this coordinator");
     CheckpointRecord before = store.get(jobId);
-    if (id <= 0 || (before != null && id <= before.id()))
+    if (id <= lastAttempt || (before != null && id <= before.id()))
       throw new IllegalArgumentException("checkpoint ID must increase");
     if (before != null && before.status() == CheckpointRecord.Status.COMMITTING)
       throw new IllegalStateException("Recover pending checkpoint first");
+    lastAttempt = id;
     Map<String, PreparedState> prepared = new LinkedHashMap<>();
     try {
       for (var entry : participants.entrySet())
-        prepared.put(entry.getKey(), Objects.requireNonNull(entry.getValue().prepare(id), "prepared state"));
+        prepared.put(
+            entry.getKey(), Objects.requireNonNull(entry.getValue().prepare(id), "prepared state"));
     } catch (Exception failure) {
       abort(id, failure);
       throw failure;
     }
-    CheckpointRecord decision = new CheckpointRecord(id, CheckpointRecord.Status.COMMITTING, prepared, before);
+    CheckpointRecord decision =
+        new CheckpointRecord(id, CheckpointRecord.Status.COMMITTING, prepared, before);
     boolean published;
     try {
       published = store.publish(jobId, before, decision);
     } catch (RuntimeException uncertain) {
+      publicationUncertain = true;
       // Do NOT abort: publication may have succeeded even if its acknowledgement was lost.
-      // Reading/recovering this job resolves the decision; loss of the cluster cannot be resolved here.
-      throw new IllegalStateException("Unknown publication outcome; inspect store and recover, never blindly abort", uncertain);
+      // Reading/recovering this job resolves the decision; loss of the cluster cannot be resolved
+      // here.
+      throw new IllegalStateException(
+          "Unknown publication outcome; inspect store and recover, never blindly abort", uncertain);
     }
     if (!published) {
+      publicationUncertain = true;
       // A competing coordinator may own the same external transaction ID. Never abort it.
-      throw new IllegalStateException("Checkpoint changed; resolve conflicting coordinator before cleanup");
+      throw new IllegalStateException(
+          "Checkpoint changed; resolve conflicting coordinator before cleanup");
     }
     return finish(decision);
   }
@@ -90,18 +102,24 @@ public final class CheckpointCoordinator {
     validate(record);
     for (var entry : participants.entrySet())
       entry.getValue().commit(record.id(), record.participants().get(entry.getKey()).handles());
-    for (CheckpointParticipant participant : participants.values()) participant.complete(record.id());
+    for (CheckpointParticipant participant : participants.values())
+      participant.complete(record.id());
     store.complete(jobId, record);
     return record.completed();
   }
+
   private void validate(CheckpointRecord record) {
     if (!record.participants().keySet().equals(participants.keySet()))
       throw new IllegalArgumentException("Participant IDs must match stored checkpoint exactly");
   }
+
   private void abort(long id, Exception failure) {
     for (CheckpointParticipant participant : participants.values()) {
-      try { participant.abort(id); }
-      catch (Exception cleanup) { if (cleanup != failure) failure.addSuppressed(cleanup); }
+      try {
+        participant.abort(id);
+      } catch (Exception cleanup) {
+        if (cleanup != failure) failure.addSuppressed(cleanup);
+      }
     }
   }
 }

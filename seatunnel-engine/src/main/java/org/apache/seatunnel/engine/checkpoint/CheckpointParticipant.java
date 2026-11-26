@@ -22,9 +22,13 @@ import java.util.List;
 /** Caller-confined, quiesced operator adapter. Commit and completion must be idempotent. */
 public interface CheckpointParticipant {
   PreparedState prepare(long checkpointId) throws Exception;
+
   void commit(long checkpointId, List<Serializable> handles) throws Exception;
+
   void complete(long checkpointId) throws Exception;
+
   /** Also called when prepare threw, to clean partially prepared local resources. */
   void abort(long checkpointId) throws Exception;
+
   void restore(Serializable state) throws Exception;
 }

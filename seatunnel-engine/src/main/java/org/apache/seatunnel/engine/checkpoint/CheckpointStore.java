@@ -29,25 +29,33 @@ public final class CheckpointStore {
 
   /** Call before starting a member. Default synchronous backup, no TTL or eviction. */
   public static MapConfig mapConfig() {
-    return new MapConfig(MAP_NAME).setBackupCount(1).setAsyncBackupCount(0)
-        .setTimeToLiveSeconds(0).setMaxIdleSeconds(0);
+    return new MapConfig(MAP_NAME)
+        .setBackupCount(1)
+        .setAsyncBackupCount(0)
+        .setTimeToLiveSeconds(0)
+        .setMaxIdleSeconds(0);
   }
 
   public CheckpointStore(HazelcastInstance member) {
     records = Objects.requireNonNull(member, "member").getMap(MAP_NAME);
   }
+
   public CheckpointRecord get(UUID jobId) {
     return records.get(Objects.requireNonNull(jobId, "jobId"));
   }
+
   boolean publish(UUID jobId, CheckpointRecord expected, CheckpointRecord decision) {
-    return expected == null ? records.putIfAbsent(jobId, decision) == null
+    return expected == null
+        ? records.putIfAbsent(jobId, decision) == null
         : records.replace(jobId, expected, decision);
   }
+
   void complete(UUID jobId, CheckpointRecord decision) {
     if (!records.replace(jobId, decision, decision.completed())
         && !decision.completed().equals(get(jobId)))
       throw new IllegalStateException("Checkpoint decision changed during completion");
   }
+
   /** Explicit lifecycle cleanup. Never remove an unresolved external commit decision. */
   public void delete(UUID jobId) {
     CheckpointRecord record = get(jobId);
