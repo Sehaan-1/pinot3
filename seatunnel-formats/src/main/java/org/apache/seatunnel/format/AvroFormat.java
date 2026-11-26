@@ -59,9 +59,11 @@ public final class AvroFormat
   @Override
   public GenericRecord deserialize(byte[] message) throws FormatException {
     try {
-      var decoder = DecoderFactory.get().binaryDecoder(Objects.requireNonNull(message, "message"), null);
-      GenericRecord value = new GenericDatumReader<GenericRecord>(new Schema.Parser().parse(schema.toString()))
-          .read(null, decoder);
+      var decoder =
+          DecoderFactory.get().binaryDecoder(Objects.requireNonNull(message, "message"), null);
+      GenericRecord value =
+          new GenericDatumReader<GenericRecord>(new Schema.Parser().parse(schema.toString()))
+              .read(null, decoder);
       if (!decoder.isEnd()) {
         throw new IOException("Trailing bytes after Avro datum");
       }

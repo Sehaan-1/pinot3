@@ -44,9 +44,12 @@ class FormatsTest {
     assertThat(format.deserialize(format.serialize(Map.of("id", 42)))).containsEntry("id", 42);
     for (String text : List.of("{bad", "{} {}", "null", "")) {
       assertThatThrownBy(() -> format.deserialize(text.getBytes(StandardCharsets.UTF_8)))
-          .isInstanceOf(FormatException.class).hasCauseInstanceOf(Exception.class);
+          .isInstanceOf(FormatException.class)
+          .hasCauseInstanceOf(Exception.class);
     }
-    assertThat(new JsonFormat<>(String.class).deserialize("\"hello\"".getBytes(StandardCharsets.UTF_8)))
+    assertThat(
+            new JsonFormat<>(String.class)
+                .deserialize("\"hello\"".getBytes(StandardCharsets.UTF_8)))
         .isEqualTo("hello");
     assertThatThrownBy(() -> format.serialize(null)).isInstanceOf(FormatException.class);
   }
@@ -121,14 +124,15 @@ class FormatsTest {
       List<Callable<Boolean>> calls = new ArrayList<>();
       for (int i = 0; i < 40; i++) {
         final int id = i;
-        calls.add(() -> {
-          GenericRecord row = new GenericData.Record(new Schema.Parser().parse(AVRO_SCHEMA));
-          row.put("id", id);
-          return json.deserialize(json.serialize("v" + id)).equals("v" + id)
-              && csv.deserialize(csv.serialize(List.of("v," + id))).equals(List.of("v," + id))
-              && avro.deserialize(avro.serialize(row)).get("id").equals(id)
-              && parquet.deserialize(parquet.serialize(metadata())).equals(metadata());
-        });
+        calls.add(
+            () -> {
+              GenericRecord row = new GenericData.Record(new Schema.Parser().parse(AVRO_SCHEMA));
+              row.put("id", id);
+              return json.deserialize(json.serialize("v" + id)).equals("v" + id)
+                  && csv.deserialize(csv.serialize(List.of("v," + id))).equals(List.of("v," + id))
+                  && avro.deserialize(avro.serialize(row)).get("id").equals(id)
+                  && parquet.deserialize(parquet.serialize(metadata())).equals(metadata());
+            });
       }
       for (var result : executor.invokeAll(calls)) {
         assertThat(result.get()).isTrue();

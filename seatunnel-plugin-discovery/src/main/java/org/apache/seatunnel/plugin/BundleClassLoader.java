@@ -28,9 +28,16 @@ import java.util.List;
 final class BundleClassLoader extends URLClassLoader {
   private final String descriptor;
   private final String serviceName;
-  private static final List<String> SHARED = List.of(
-      "java.", "javax.", "jdk.", "sun.", "org.apache.seatunnel.api.",
-      "org.apache.seatunnel.common.", "org.apache.seatunnel.plugin.", "org.slf4j.");
+  private static final List<String> SHARED =
+      List.of(
+          "java.",
+          "javax.",
+          "jdk.",
+          "sun.",
+          "org.apache.seatunnel.api.",
+          "org.apache.seatunnel.common.",
+          "org.apache.seatunnel.plugin.",
+          "org.slf4j.");
 
   BundleClassLoader(URL[] urls, ClassLoader parent, Class<?> service) {
     super(urls, parent);

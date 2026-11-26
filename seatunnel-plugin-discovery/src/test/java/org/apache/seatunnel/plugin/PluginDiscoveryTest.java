@@ -35,7 +35,9 @@ class PluginDiscoveryTest {
   @TempDir Path temporary;
   private int sequence;
 
-  /** Builds real provider classes and service registrations, without mocks or checked-in binaries. */
+  /**
+   * Builds real provider classes and service registrations, without mocks or checked-in binaries.
+   */
   private Path bundle(List<String> identifiers, boolean brokenDescriptor) throws IOException {
     Path root = Files.createDirectory(temporary.resolve("bundle-" + sequence++));
     Path classes = Files.createDirectory(root.resolve("classes"));
@@ -43,27 +45,37 @@ class PluginDiscoveryTest {
     StringBuilder descriptor = new StringBuilder();
     for (int i = 0; i < identifiers.size(); i++) {
       String className = "Provider" + i;
-      String code = "package fixture; public class " + className
-          + " implements org.apache.seatunnel.plugin.Plugin {"
-          + " public " + className + "() { if (Thread.currentThread().getContextClassLoader()"
-          + " != getClass().getClassLoader()) throw new IllegalStateException(\"wrong TCCL\"); }"
-          + " public String identifier() { return \"" + identifiers.get(i) + "\"; }"
-          + " public String toString() { return Dependency.value(); }}";
+      String code =
+          "package fixture; public class "
+              + className
+              + " implements org.apache.seatunnel.plugin.Plugin {"
+              + " public "
+              + className
+              + "() { if (Thread.currentThread().getContextClassLoader()"
+              + " != getClass().getClassLoader()) throw new IllegalStateException(\"wrong TCCL\"); }"
+              + " public String identifier() { return \""
+              + identifiers.get(i)
+              + "\"; }"
+              + " public String toString() { return Dependency.value(); }}";
       Path source = root.resolve(className + ".java");
       Files.writeString(source, code);
       sources.add(source.toString());
       descriptor.append("fixture.").append(className).append('\n');
     }
     Path dependency = root.resolve("Dependency.java");
-    Files.writeString(dependency,
+    Files.writeString(
+        dependency,
         "package fixture; public class Dependency { public static String value() { return \"bundle\"; }}");
     sources.add(dependency.toString());
-    List<String> arguments = new ArrayList<>(List.of("-classpath", System.getProperty("java.class.path"),
-        "-d", classes.toString()));
+    List<String> arguments =
+        new ArrayList<>(
+            List.of("-classpath", System.getProperty("java.class.path"), "-d", classes.toString()));
     arguments.addAll(sources);
     assertThat(ToolProvider.getSystemJavaCompiler()).as("JDK compiler is required").isNotNull();
-    assertThat(ToolProvider.getSystemJavaCompiler().run(null, null, null,
-        arguments.toArray(String[]::new))).isZero();
+    assertThat(
+            ToolProvider.getSystemJavaCompiler()
+                .run(null, null, null, arguments.toArray(String[]::new)))
+        .isZero();
     Path jar = root.resolve("plugin.jar");
     try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar));
         var paths = Files.walk(classes)) {
@@ -73,8 +85,9 @@ class PluginDiscoveryTest {
         output.closeEntry();
       }
       output.putNextEntry(new JarEntry("META-INF/services/" + Plugin.class.getName()));
-      output.write((brokenDescriptor ? "missing.Provider\n" : descriptor.toString())
-          .getBytes(StandardCharsets.UTF_8));
+      output.write(
+          (brokenDescriptor ? "missing.Provider\n" : descriptor.toString())
+              .getBytes(StandardCharsets.UTF_8));
       output.closeEntry();
       // A bundled API copy must never replace the parent's shared contract.
       String contract = Plugin.class.getName().replace('.', '/') + ".class";
@@ -111,10 +124,14 @@ class PluginDiscoveryTest {
   @Test
   void rejectsDuplicateIdsBadIdsAndBrokenRegistrationsAndRestoresTccl() throws Exception {
     ClassLoader previous = Thread.currentThread().getContextClassLoader();
-    for (Path jar : List.of(bundle(List.of("same", "same"), false),
-        bundle(List.of("Bad Id"), false), bundle(List.of(), true))) {
+    for (Path jar :
+        List.of(
+            bundle(List.of("same", "same"), false),
+            bundle(List.of("Bad Id"), false),
+            bundle(List.of(), true))) {
       assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of(jar)))
-          .isInstanceOf(PluginException.class).hasCauseInstanceOf(Throwable.class);
+          .isInstanceOf(PluginException.class)
+          .hasCauseInstanceOf(Throwable.class);
       assertThat(Thread.currentThread().getContextClassLoader()).isSameAs(previous);
     }
   }
@@ -124,11 +141,14 @@ class PluginDiscoveryTest {
     Path corrupt = temporary.resolve("corrupt.jar");
     Files.writeString(corrupt, "not a ZIP archive");
     assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of(corrupt)))
-        .isInstanceOf(PluginException.class).hasMessageContaining("Cannot read plugin bundle JAR");
+        .isInstanceOf(PluginException.class)
+        .hasMessageContaining("Cannot read plugin bundle JAR");
     assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of()))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> PluginDiscovery.load(Plugin.class, List.of(temporary.resolve("absent.jar"))))
-        .isInstanceOf(PluginException.class).hasMessageContaining("Not a plugin JAR");
+    assertThatThrownBy(
+            () -> PluginDiscovery.load(Plugin.class, List.of(temporary.resolve("absent.jar"))))
+        .isInstanceOf(PluginException.class)
+        .hasMessageContaining("Not a plugin JAR");
   }
 
   @Test

@@ -53,10 +53,13 @@ public final class CsvFormat
   @Override
   public List<String> deserialize(byte[] message) throws FormatException {
     try {
-      String text = StandardCharsets.UTF_8.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT)
-          .decode(ByteBuffer.wrap(Objects.requireNonNull(message, "message"))).toString();
+      String text =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onMalformedInput(CodingErrorAction.REPORT)
+              .onUnmappableCharacter(CodingErrorAction.REPORT)
+              .decode(ByteBuffer.wrap(Objects.requireNonNull(message, "message")))
+              .toString();
       try (CSVParser parser = CSVFormat.RFC4180.parse(new StringReader(text))) {
         List<CSVRecord> records = parser.getRecords();
         if (records.size() != 1) {

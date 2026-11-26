@@ -40,8 +40,10 @@ public final class JsonFormat<T> implements SerializationSchema<T>, Deserializat
 
   public JsonFormat(TypeReference<T> type) {
     ObjectMapper mapper = new ObjectMapper();
-    reader = mapper.readerFor(Objects.requireNonNull(type, "type"))
-        .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+    reader =
+        mapper
+            .readerFor(Objects.requireNonNull(type, "type"))
+            .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     writer = mapper.writerFor(type);
   }
 

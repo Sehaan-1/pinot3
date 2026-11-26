@@ -40,7 +40,8 @@ public final class ParquetMetadataFormat
   @Override
   public FileMetaData deserialize(byte[] message) throws FormatException {
     try {
-      ByteArrayInputStream input = new ByteArrayInputStream(Objects.requireNonNull(message, "message"));
+      ByteArrayInputStream input =
+          new ByteArrayInputStream(Objects.requireNonNull(message, "message"));
       FileMetaData value = Util.readFileMetaData(input);
       if (input.available() != 0) {
         throw new IOException("Trailing bytes after Parquet metadata");
