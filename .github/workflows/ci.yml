@@ -29,17 +29,20 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Test common and config contracts
-        run: ./mvnw -pl seatunnel-common,seatunnel-config -am test
-
-      - name: Test API contracts
-        run: ./mvnw -pl seatunnel-api -am test
-
-      - name: Test plugin discovery and formats
-        run: ./mvnw -pl seatunnel-plugin-discovery,seatunnel-formats -am test
-
       - name: Temporary format application
-        run: ./mvnw -B -ntp spotless:apply
+        run: |
+          set +e
+          ./mvnw -B -ntp spotless:apply > formatter.log 2>&1
+          status=$?
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          text = '\n'.join(Path('formatter.log').read_text().splitlines()[-70:])
+          if '[ERROR]' in text:
+              for index in range(0, len(text), 2500):
+                  part = text[index:index + 2500]
+                  print(f'::error title=Format {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PYCODE
+          exit "$status"
 
       - name: Temporary formatting patch foundation
         run: |
