@@ -35,6 +35,9 @@ jobs:
       - name: Test API contracts
         run: ./mvnw -pl seatunnel-api -am test
 
+      - name: Test plugin discovery and formats
+        run: ./mvnw -pl seatunnel-plugin-discovery,seatunnel-formats -am test
+
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify
 

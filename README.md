@@ -14,8 +14,8 @@ all driven by declarative HOCON job configs and a plugin architecture.
 |-------|-------|--------|
 | 1 | Build & repo scaffold (root POM, Maven wrapper, Spotless/license, CI) | ✅ Merged |
 | 2 | `seatunnel-common` + `seatunnel-config` | ✅ Merged |
-| 3 | `seatunnel-api` (engine-independent contracts) | In review — PR #3 |
-| 4 | `seatunnel-plugin-discovery` + `seatunnel-formats` | ⬜ |
+| 3 | `seatunnel-api` (engine-independent contracts) | ✅ Merged |
+| 4 | `seatunnel-plugin-discovery` + `seatunnel-formats` | In review — PR #4 |
 | 5 | `seatunnel-core` + `seatunnel-cli` + FakeSource + ConsoleSink (runnable baseline) | ⬜ |
 | 6 | `seatunnel-engine` / Zeta (DAG → Master/Worker → checkpoint → submit/REST) | ⬜ |
 | 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |

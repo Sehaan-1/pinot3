@@ -57,9 +57,9 @@
         <module>seatunnel-common</module>
         <module>seatunnel-config</module>
         <module>seatunnel-api</module>
-        <!--
         <module>seatunnel-plugin-discovery</module>
         <module>seatunnel-formats</module>
+        <!--
         <module>seatunnel-core</module>
         <module>seatunnel-cli</module>
         <module>seatunnel-engine</module>
@@ -103,6 +103,7 @@
         <avro.version>1.12.0</avro.version>
         <parquet.version>1.15.0</parquet.version>
         <commons-csv.version>1.11.0</commons-csv.version>
+        <commons-codec.version>1.17.0</commons-codec.version>
 
         <!-- CLI (Slice 5) -->
         <picocli.version>4.7.6</picocli.version>
@@ -121,6 +122,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Align CSV and Avro/compress transitive codec versions. -->
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
             <!-- BOM imports: single source of truth for transitive versions -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -203,7 +210,7 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.parquet</groupId>
-                <artifactId>parquet-format</artifactId>
+                <artifactId>parquet-format-structures</artifactId>
                 <version>${parquet.version}</version>
             </dependency>
             <dependency>
