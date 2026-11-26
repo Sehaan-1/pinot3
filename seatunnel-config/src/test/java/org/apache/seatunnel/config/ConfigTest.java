@@ -70,8 +70,7 @@ class ConfigTest {
     Assertions.assertThat(config.getLong("app.missing", -1L)).isEqualTo(-1L);
     Assertions.assertThat(config.getBoolean("app.missing", true)).isTrue();
     Assertions.assertThat(config.getDouble("app.missing", 1.5)).isEqualTo(1.5);
-    Assertions.assertThat(config.getStringList("app.missing", List.of("x")))
-        .containsExactly("x");
+    Assertions.assertThat(config.getStringList("app.missing", List.of("x"))).containsExactly("x");
   }
 
   @Test

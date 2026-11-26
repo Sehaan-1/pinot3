@@ -23,8 +23,8 @@ import java.util.Map;
 import org.apache.seatunnel.common.exception.ConfigException;
 
 /**
- * Builds a {@link Config} from a file, classpath resource, or inline HOCON text, optionally
- * layered with string overrides. Not thread-safe; configure and build on a single thread.
+ * Builds a {@link Config} from a file, classpath resource, or inline HOCON text, optionally layered
+ * with string overrides. Not thread-safe; configure and build on a single thread.
  */
 public final class ConfigBuilder {
 

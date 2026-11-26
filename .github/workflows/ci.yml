@@ -29,29 +29,11 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # TEMPORARY DIAGNOSTIC (remove once green): surface Maven errors as
-      # annotations, since job logs are not retrievable from the sandbox.
+      - name: Test common and config contracts
+        run: ./mvnw -pl seatunnel-common,seatunnel-config -am test
+
       - name: Build, test, and verify (Spotless + license + JaCoCo)
-        id: build
-        run: |
-          set +e
-          ./mvnw -B -ntp verify > maven.log 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-          tail -n 40 maven.log
-
-      - name: Report Maven errors as annotations
-        if: steps.build.outputs.exit_code != '0'
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          text = '\n'.join(Path('maven.log').read_text().splitlines()[-65:])
-          text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-          print('::error title=Maven verification::' + text)
-          PY
-
-      - name: Fail if build failed
-        if: steps.build.outputs.exit_code != '0'
-        run: exit 1
+        run: ./mvnw -B -ntp verify
 
       - name: Upload Surefire reports on failure
         if: failure()
