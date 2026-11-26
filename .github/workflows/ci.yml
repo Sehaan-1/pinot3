@@ -43,7 +43,7 @@ jobs:
         if: steps.build.outputs.exit_code != '0'
         run: |
           echo "::error title=Diag::log lines: $(wc -l < maven.log)"
-          grep -E "Failed to execute goal|format violations|do not have header|BUILD FAILURE|spotless|license-maven|jacoco" maven.log | head -20 | while IFS= read -r line; do
+          tail -n 55 maven.log | while IFS= read -r line; do
             esc=$(printf '%s' "$line" | sed 's/%/%25/g' | cut -c1-400)
             echo "::error title=Diag::$esc"
           done
