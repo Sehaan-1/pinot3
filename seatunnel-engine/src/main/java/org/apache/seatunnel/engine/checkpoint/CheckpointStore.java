@@ -19,6 +19,8 @@ package org.apache.seatunnel.engine.checkpoint;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
+import com.hazelcast.map.EntryProcessor;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -45,15 +47,16 @@ public final class CheckpointStore {
   }
 
   boolean publish(UUID jobId, CheckpointRecord expected, CheckpointRecord decision) {
-    return expected == null
-        ? records.putIfAbsent(jobId, decision) == null
-        : records.replace(jobId, expected, decision);
+    return records.executeOnKey(jobId, new Transition(expected, decision));
   }
 
   void complete(UUID jobId, CheckpointRecord decision) {
-    if (!records.replace(jobId, decision, decision.completed())
-        && !decision.completed().equals(get(jobId)))
-      throw new IllegalStateException("Checkpoint decision changed during completion");
+    if (!records.executeOnKey(jobId, new Transition(decision, decision.completed()))) {
+      CheckpointRecord current = get(jobId);
+      if (current == null || current.id() != decision.id()
+          || current.status() != CheckpointRecord.Status.COMPLETED)
+        throw new IllegalStateException("Checkpoint decision changed during completion");
+    }
   }
 
   /** Explicit lifecycle cleanup. Never remove an unresolved external commit decision. */
@@ -62,6 +65,29 @@ public final class CheckpointStore {
     if (record == null) return;
     if (record.status() != CheckpointRecord.Status.COMPLETED)
       throw new IllegalStateException("Recover pending checkpoint before deleting job");
-    if (!records.remove(jobId, record)) throw new IllegalStateException("Checkpoint changed");
+    if (!records.executeOnKey(jobId, new Transition(record, null)))
+      throw new IllegalStateException("Checkpoint changed");
+  }
+
+  /** Compare immutable decision versions, not arbitrary user payload equals/serialization bytes. */
+  private static final class Transition implements EntryProcessor<UUID, CheckpointRecord, Boolean> {
+    private final long expectedId;
+    private final CheckpointRecord.Status expectedStatus;
+    private final CheckpointRecord replacement;
+
+    Transition(CheckpointRecord expected, CheckpointRecord replacement) {
+      expectedId = expected == null ? 0 : expected.id();
+      expectedStatus = expected == null ? null : expected.status();
+      this.replacement = replacement;
+    }
+
+    @Override
+    public Boolean process(Map.Entry<UUID, CheckpointRecord> entry) {
+      CheckpointRecord current = entry.getValue();
+      boolean matches = current == null ? expectedId == 0
+          : current.id() == expectedId && current.status() == expectedStatus;
+      if (matches) entry.setValue(replacement);
+      return matches;
+    }
   }
 }

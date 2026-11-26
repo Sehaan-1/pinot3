@@ -6,7 +6,7 @@ PR title: `[Slice 6c] Replicated checkpoint decisions and explicit recovery`.
 Module: `seatunnel-engine`, package `checkpoint`. Dependencies remain engine -> API/common;
 no engine imports in API, no connector/core/CLI dependencies.
 
-Adopt existing Hazelcast 5.5.0 IMap conditional operations and synchronous backup
+Adopt existing Hazelcast 5.5.0 IMap atomic entry processors and synchronous backup
 for replicated checkpoint records; do not build a storage protocol. Reuse JDK
 serialization contracts and immutable collection copies. Reuse JUnit 5.11.0,
 AssertJ 3.26.3 and Awaitility 4.2.2 for tests. No new dependency.
@@ -20,10 +20,11 @@ Build only the engine-specific checkpoint state machine and split ownership ledg
   NOT supported. Caller must quiesce operators and serialize work with callbacks.
 - Named participants return detached Serializable snapshots and prepared commit handles.
   Coordinator collects every participant before publishing a COMMITTING decision through
-  atomic IMap putIfAbsent; publication precedes any external commit. Failed preparation
+  an atomic IMap entry processor; publication precedes any external commit. Failed preparation
   aborts all participants best-effort. After publication, failure NEVER aborts: recovery
   retries idempotent commits and completion notifications using stored handles.
-- COMMITTING -> COMPLETED is conditional replace. Checkpoint IDs must be positive and
+- COMMITTING -> COMPLETED compares checkpoint ID/status atomically on the partition
+  thread, never arbitrary payload equality or serialization byte order. Checkpoint IDs must be positive and
   strictly increasing per job, including aborted attempts. Local attempted IDs and stored
   decision IDs are checked; after replacement the caller must supply fresh IDs, never
   reuse aborted transaction IDs. Unresolved decisions block new checkpoints. Latest completed
