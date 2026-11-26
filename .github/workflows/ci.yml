@@ -35,6 +35,9 @@ jobs:
       - name: Verify runnable CLI and E2E
         run: ./mvnw -pl seatunnel-cli -am verify
 
+      - name: Run documented local example
+        run: java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar --config examples/fake-to-console.conf --mode local
+
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify
 
