@@ -56,8 +56,8 @@
     <modules>
         <module>seatunnel-common</module>
         <module>seatunnel-config</module>
-        <!--
         <module>seatunnel-api</module>
+        <!--
         <module>seatunnel-plugin-discovery</module>
         <module>seatunnel-formats</module>
         <module>seatunnel-core</module>
