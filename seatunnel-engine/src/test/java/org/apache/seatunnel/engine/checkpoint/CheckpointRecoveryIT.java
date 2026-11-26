@@ -191,6 +191,32 @@ class CheckpointRecoveryIT {
 
   private record Split(String splitId) implements org.apache.seatunnel.api.source.SourceSplit {}
 
+  @Test
+  void coordinatesAllParticipantsWithoutPayloadEquality() throws Exception {
+    UUID job = UUID.randomUUID();
+    var store = new CheckpointStore(first.member());
+    var left = new Participant(store, job);
+    var right = new Participant(store, job);
+    left.snapshot = new Offset(10);
+    right.snapshot = new Offset(20);
+    var coordinator = new CheckpointCoordinator(job, store, Map.of("left", left, "right", right));
+    coordinator.checkpoint(1);
+    var other = new CheckpointStore(second.member());
+    var replacement = new CheckpointCoordinator(job, other, Map.of("left", left, "right", right));
+    replacement.checkpoint(2);
+    replacement.restore();
+    assertThat(((Offset) left.restored).value).isEqualTo(10);
+    assertThat(((Offset) right.restored).value).isEqualTo(20);
+    assertThat(left.commits).isEqualTo(2);
+    assertThat(right.commits).isEqualTo(2);
+    other.delete(job);
+  }
+
+  private static final class Offset implements Serializable {
+    final int value;
+    Offset(int value) { this.value = value; }
+  }
+
   private static CheckpointCoordinator coordinator(UUID job, CheckpointStore store, Participant p) {
     return new CheckpointCoordinator(job, store, Map.of("operator", p));
   }
