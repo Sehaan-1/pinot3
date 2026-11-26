@@ -39,11 +39,15 @@ class SeaTunnelCommandTest {
       assertThat(discovery.identifiers()).containsExactly("fake");
     }
     StringWriter output = new StringWriter();
-    long count = new LocalRunner().run(JobConfig.parse(Config.parseString(
-        "source { plugin=fake, options { rows=3, start=10, split-size=1 } }\nsink.plugin=console")), output);
+    long count =
+        new LocalRunner()
+            .run(
+                JobConfig.parse(
+                    Config.parseString(
+                        "source { plugin=fake, options { rows=3, start=10, split-size=1 } }\nsink.plugin=console")),
+                output);
     assertThat(count).isEqualTo(3);
-    assertThat(output.toString()).isEqualTo(
-        "[10,\"row-10\"]\n[11,\"row-11\"]\n[12,\"row-12\"]\n");
+    assertThat(output.toString()).isEqualTo("[10,\"row-10\"]\n[11,\"row-11\"]\n[12,\"row-12\"]\n");
     assertThat(Thread.currentThread().getContextClassLoader()).isSameAs(previous);
   }
 
@@ -56,9 +60,17 @@ class SeaTunnelCommandTest {
     assertThat(errors.toString()).isEmpty();
     Path config = temporary.resolve("job.conf");
     Files.writeString(config, "source.plugin=fake\nsink.plugin=console");
-    assertThat(SeaTunnelCommand.execute(new String[] {"--config", config.toString(), "--mode", "cluster"},
-        new StringWriter(), errors)).isEqualTo(2);
-    assertThat(SeaTunnelCommand.execute(new String[] {"--config", temporary.resolve("absent.conf").toString()},
-        new StringWriter(), errors)).isEqualTo(1);
+    assertThat(
+            SeaTunnelCommand.execute(
+                new String[] {"--config", config.toString(), "--mode", "cluster"},
+                new StringWriter(),
+                errors))
+        .isEqualTo(2);
+    assertThat(
+            SeaTunnelCommand.execute(
+                new String[] {"--config", temporary.resolve("absent.conf").toString()},
+                new StringWriter(),
+                errors))
+        .isEqualTo(1);
   }
 }

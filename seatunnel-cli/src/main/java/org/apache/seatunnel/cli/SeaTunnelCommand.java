@@ -30,7 +30,9 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 /** Local-only CLI; stdout is reserved for data rows, stderr for diagnostics. */
-@Command(name = "seatunnel", mixinStandardHelpOptions = true,
+@Command(
+    name = "seatunnel",
+    mixinStandardHelpOptions = true,
     version = "SeaTunnel local baseline 3.0.0-SNAPSHOT")
 public final class SeaTunnelCommand implements Callable<Integer> {
   @Option(names = "--config", required = true, description = "HOCON job configuration file")
@@ -48,7 +50,8 @@ public final class SeaTunnelCommand implements Callable<Integer> {
   @Override
   public Integer call() throws Exception {
     if (!"local".equals(mode)) {
-      throw new CommandLine.ParameterException(new CommandLine(this), "Only --mode local is supported");
+      throw new CommandLine.ParameterException(
+          new CommandLine(this), "Only --mode local is supported");
     }
     new LocalRunner().run(JobConfig.parse(Config.parseFile(config.toFile())), output);
     return 0;
@@ -58,20 +61,24 @@ public final class SeaTunnelCommand implements Callable<Integer> {
     CommandLine command = new CommandLine(new SeaTunnelCommand(output));
     command.setOut(new PrintWriter(output, true));
     command.setErr(new PrintWriter(errors, true));
-    command.setExecutionExceptionHandler((failure, cli, parsed) -> {
-      if (failure instanceof CommandLine.ParameterException) {
-        cli.getErr().println(failure.getMessage());
-        return 2;
-      }
-      cli.getErr().println("Job failed: " + failure.getMessage());
-      return 1;
-    });
+    command.setExecutionExceptionHandler(
+        (failure, cli, parsed) -> {
+          if (failure instanceof CommandLine.ParameterException) {
+            cli.getErr().println(failure.getMessage());
+            return 2;
+          }
+          cli.getErr().println("Job failed: " + failure.getMessage());
+          return 1;
+        });
     return command.execute(arguments);
   }
 
   public static void main(String[] arguments) {
-    int code = execute(arguments, new OutputStreamWriter(System.out, StandardCharsets.UTF_8),
-        new OutputStreamWriter(System.err, StandardCharsets.UTF_8));
+    int code =
+        execute(
+            arguments,
+            new OutputStreamWriter(System.out, StandardCharsets.UTF_8),
+            new OutputStreamWriter(System.err, StandardCharsets.UTF_8));
     System.exit(code);
   }
 }

@@ -23,8 +23,11 @@ import org.apache.seatunnel.common.exception.ConfigException;
 import org.apache.seatunnel.config.Config;
 
 /** Validated, immutable local job specification. Connector factories validate their own options. */
-public record JobConfig(String sourceId, Map<String, Object> sourceOptions,
-    String sinkId, Map<String, Object> sinkOptions) {
+public record JobConfig(
+    String sourceId,
+    Map<String, Object> sourceOptions,
+    String sinkId,
+    Map<String, Object> sinkOptions) {
   public JobConfig {
     validateId(sourceId);
     validateId(sinkId);
@@ -54,8 +57,8 @@ public record JobConfig(String sourceId, Map<String, Object> sourceOptions,
       Config sink = config.getConfig("sink");
       allowed(source, Set.of("plugin", "options"));
       allowed(sink, Set.of("plugin", "options"));
-      return new JobConfig(source.getString("plugin"), options(source),
-          sink.getString("plugin"), options(sink));
+      return new JobConfig(
+          source.getString("plugin"), options(source), sink.getString("plugin"), options(sink));
     } catch (com.typesafe.config.ConfigException failure) {
       throw new ConfigException("Invalid or unresolved job configuration", failure);
     }
@@ -63,7 +66,8 @@ public record JobConfig(String sourceId, Map<String, Object> sourceOptions,
 
   private static Map<String, Object> options(Config section) {
     return section.unwrap().hasPathOrNull("options")
-        ? section.getConfig("options").unwrap().root().unwrapped() : Map.of();
+        ? section.getConfig("options").unwrap().root().unwrapped()
+        : Map.of();
   }
 
   private static void allowed(Config config, Set<String> keys) {

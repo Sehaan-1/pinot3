@@ -35,9 +35,12 @@ class PipelineIT {
 
   private Result run(String configText, String... extra) throws Exception {
     Path folder = Files.createDirectory(temporary.resolve("run-" + sequence++));
-    List<String> args = new ArrayList<>(List.of(
-        Path.of(System.getProperty("java.home"), "bin", "java").toString(), "-jar",
-        Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toAbsolutePath().toString()));
+    List<String> args =
+        new ArrayList<>(
+            List.of(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-jar",
+                Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toAbsolutePath().toString()));
     if (configText != null) {
       Path config = folder.resolve("job.conf");
       Files.writeString(config, configText);
@@ -46,8 +49,11 @@ class PipelineIT {
     args.addAll(List.of(extra));
     Path stdout = folder.resolve("stdout.txt");
     Path stderr = folder.resolve("stderr.txt");
-    Process process = new ProcessBuilder(args).redirectOutput(stdout.toFile())
-        .redirectError(stderr.toFile()).start();
+    Process process =
+        new ProcessBuilder(args)
+            .redirectOutput(stdout.toFile())
+            .redirectError(stderr.toFile())
+            .start();
     try {
       assertThat(process.waitFor(30, TimeUnit.SECONDS)).as("CLI process completed").isTrue();
       return new Result(process.exitValue(), Files.readString(stdout), Files.readString(stderr));
@@ -60,12 +66,21 @@ class PipelineIT {
 
   @Test
   void packagedJarRunsTheRealPipelineWithExactDeterministicRows() throws Exception {
-    Result result = run("env.parallelism=1\nsource { plugin=fake, options { rows=5, start=10, split-size=2 } }\n"
-        + "sink.plugin=console", "--mode", "local");
+    Result result =
+        run(
+            "env.parallelism=1\nsource { plugin=fake, options { rows=5, start=10, split-size=2 } }\n"
+                + "sink.plugin=console",
+            "--mode",
+            "local");
     assertThat(result.code()).as(result.errors()).isZero();
     assertThat(result.errors()).isEmpty();
-    assertThat(result.output().lines().toList()).containsExactly(
-        "[10,\"row-10\"]", "[11,\"row-11\"]", "[12,\"row-12\"]", "[13,\"row-13\"]", "[14,\"row-14\"]");
+    assertThat(result.output().lines().toList())
+        .containsExactly(
+            "[10,\"row-10\"]",
+            "[11,\"row-11\"]",
+            "[12,\"row-12\"]",
+            "[13,\"row-13\"]",
+            "[14,\"row-14\"]");
   }
 
   @Test
@@ -77,12 +92,13 @@ class PipelineIT {
 
   @Test
   void errorsProduceNonzeroExitsAndNoData() throws Exception {
-    for (String config : List.of(
-        "source.plugin=missing\nsink.plugin=console",
-        "source { plugin=fake, options.rows=-1 }\nsink.plugin=console",
-        "source { plugin=fake, options.typo=1 }\nsink.plugin=console",
-        "source.plugin=fake\nsink { plugin=console, options.typo=true }",
-        "source = [invalid")) {
+    for (String config :
+        List.of(
+            "source.plugin=missing\nsink.plugin=console",
+            "source { plugin=fake, options.rows=-1 }\nsink.plugin=console",
+            "source { plugin=fake, options.typo=1 }\nsink.plugin=console",
+            "source.plugin=fake\nsink { plugin=console, options.typo=true }",
+            "source = [invalid")) {
       Result result = run(config);
       assertThat(result.code()).isEqualTo(1);
       assertThat(result.output()).isEmpty();
@@ -95,6 +111,7 @@ class PipelineIT {
     assertThat(run(null, "--help").code()).isZero();
     assertThat(run(null, "--version").output()).contains("SeaTunnel local baseline");
     assertThat(run(null).code()).isEqualTo(2);
-    assertThat(run("source.plugin=fake\nsink.plugin=console", "--mode", "cluster").code()).isEqualTo(2);
+    assertThat(run("source.plugin=fake\nsink.plugin=console", "--mode", "cluster").code())
+        .isEqualTo(2);
   }
 }

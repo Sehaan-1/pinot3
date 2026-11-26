@@ -28,9 +28,11 @@ import org.junit.jupiter.api.Test;
 class JobConfigTest {
   @Test
   void resolvesHoconAndPreservesTypedOptions() {
-    JobConfig config = JobConfig.parse(Config.parseString(
-        "env.parallelism=1\nsource { plugin=fake, options { rows=3, start=${env.parallelism} } }\n"
-            + "sink.plugin=console"));
+    JobConfig config =
+        JobConfig.parse(
+            Config.parseString(
+                "env.parallelism=1\nsource { plugin=fake, options { rows=3, start=${env.parallelism} } }\n"
+                    + "sink.plugin=console"));
     assertThat(config.sourceId()).isEqualTo("fake");
     assertThat(config.sourceOptions()).containsEntry("rows", 3).containsEntry("start", 1);
     assertThat(config.sinkOptions()).isEmpty();
@@ -38,11 +40,15 @@ class JobConfigTest {
 
   @Test
   void rejectsUnknownKeysMissingSectionsUnsupportedParallelismAndUnresolvedValues() {
-    for (String text : new String[] {
-        "source.plugin=fake", "source.plugin=fake\nsink.plugin=console\ntypo=true",
-        "source.plugin=fake\nsink.plugin=console\nenv.parallelism=2",
-        "source.plugin=fake\nsink.plugin=console\nsource.unknown=1",
-        "source.plugin=${absent}\nsink.plugin=console", "source.plugin=BAD\nsink.plugin=console"}) {
+    for (String text :
+        new String[] {
+          "source.plugin=fake",
+          "source.plugin=fake\nsink.plugin=console\ntypo=true",
+          "source.plugin=fake\nsink.plugin=console\nenv.parallelism=2",
+          "source.plugin=fake\nsink.plugin=console\nsource.unknown=1",
+          "source.plugin=${absent}\nsink.plugin=console",
+          "source.plugin=BAD\nsink.plugin=console"
+        }) {
       assertThatThrownBy(() -> JobConfig.parse(Config.parseString(text)))
           .isInstanceOf(ConfigException.class);
     }

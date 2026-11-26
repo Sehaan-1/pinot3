@@ -36,11 +36,17 @@ class FakeSourceTest {
     FakeSource.ReaderState snapshot;
     List<SeaTunnelRow> rows = new ArrayList<>();
     try (var reader = source.createReader(0, Optional.empty())) {
-      assertThatThrownBy(() -> reader.pollNext(rows::add)).isInstanceOf(IllegalStateException.class);
+      assertThatThrownBy(() -> reader.pollNext(rows::add))
+          .isInstanceOf(IllegalStateException.class);
       reader.start();
       reader.addSplits(List.of(new FakeSource.Split(10, 13)));
       reader.notifyNoMoreSplits();
-      assertThatThrownBy(() -> reader.pollNext(row -> { throw new IOException("output failed"); }))
+      assertThatThrownBy(
+              () ->
+                  reader.pollNext(
+                      row -> {
+                        throw new IOException("output failed");
+                      }))
           .isInstanceOf(IOException.class);
       assertThat(reader.pollNext(rows::add)).isEqualTo(ReadStatus.MORE_AVAILABLE);
       snapshot = reader.snapshotState(1);
@@ -48,7 +54,8 @@ class FakeSourceTest {
       reader.notifyCheckpointComplete(1);
       reader.notifyCheckpointAborted(1);
       assertThat(snapshot.remaining()).containsExactly(new FakeSource.Split(11, 13));
-      assertThatThrownBy(() -> reader.snapshotState(-1)).isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(() -> reader.snapshotState(-1))
+          .isInstanceOf(IllegalArgumentException.class);
     }
     rows.clear();
     try (var reader = source.createReader(0, Optional.of(snapshot))) {
@@ -56,7 +63,8 @@ class FakeSourceTest {
       assertThat(reader.pollNext(rows::add)).isEqualTo(ReadStatus.MORE_AVAILABLE);
       assertThat(reader.pollNext(rows::add)).isEqualTo(ReadStatus.END_OF_INPUT);
       assertThat(reader.pollNext(rows::add)).isEqualTo(ReadStatus.END_OF_INPUT);
-      assertThat(rows).containsExactly(new SeaTunnelRow(11L, "row-11"), new SeaTunnelRow(12L, "row-12"));
+      assertThat(rows)
+          .containsExactly(new SeaTunnelRow(11L, "row-11"), new SeaTunnelRow(12L, "row-12"));
     }
   }
 
@@ -82,8 +90,11 @@ class FakeSourceTest {
       for (int i = 0; i < 5; i++) {
         restored.handleSplitRequest(0);
       }
-      assertThat(context.splits).containsExactly(new FakeSource.Split(10, 12),
-          new FakeSource.Split(12, 14), new FakeSource.Split(14, 15));
+      assertThat(context.splits)
+          .containsExactly(
+              new FakeSource.Split(10, 12),
+              new FakeSource.Split(12, 14),
+              new FakeSource.Split(14, 15));
       assertThat(context.completions).isEqualTo(1);
     }
   }
@@ -101,10 +112,15 @@ class FakeSourceTest {
     assertThatThrownBy(() -> plugin.createSource(Map.of("typo", 1)))
         .isInstanceOf(org.apache.seatunnel.common.exception.ConfigException.class);
     FakeSource source = new FakeSource(1, Integer.MAX_VALUE, 1);
-    assertThatThrownBy(() -> source.createReader(0,
-        Optional.of(new FakeSource.ReaderState(List.of(new FakeSource.Split(0, 1)), true))))
+    assertThatThrownBy(
+            () ->
+                source.createReader(
+                    0,
+                    Optional.of(
+                        new FakeSource.ReaderState(List.of(new FakeSource.Split(0, 1)), true))))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> new FakeSource.Split(1, 1)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new FakeSource.Split(1, 1))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -113,9 +129,10 @@ class FakeSourceTest {
     List<SeaTunnelRow> rows = new ArrayList<>();
     var reader = source.createReader(0, Optional.empty());
     reader.start();
-    reader.addSplits(List.of(new FakeSource.Split(Integer.MAX_VALUE, (long) Integer.MAX_VALUE + 2)));
+    reader.addSplits(
+        List.of(new FakeSource.Split(Integer.MAX_VALUE, (long) Integer.MAX_VALUE + 2)));
     reader.notifyNoMoreSplits();
-    while (reader.pollNext(rows::add) != ReadStatus.END_OF_INPUT) { }
+    while (reader.pollNext(rows::add) != ReadStatus.END_OF_INPUT) {}
     assertThat(rows.get(1).getField(0)).isEqualTo((long) Integer.MAX_VALUE + 1);
     reader.close();
     reader.close();
@@ -127,12 +144,18 @@ class FakeSourceTest {
     int completions;
 
     @Override
-    public int currentParallelism() { return 1; }
+    public int currentParallelism() {
+      return 1;
+    }
 
     @Override
-    public void assignSplits(int readerId, List<FakeSource.Split> assigned) { splits.addAll(assigned); }
+    public void assignSplits(int readerId, List<FakeSource.Split> assigned) {
+      splits.addAll(assigned);
+    }
 
     @Override
-    public void signalNoMoreSplits(int readerId) { completions++; }
+    public void signalNoMoreSplits(int readerId) {
+      completions++;
+    }
   }
 }

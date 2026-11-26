@@ -46,7 +46,8 @@ class ConsoleSinkTest {
     assertThat(output.text.toString()).isEqualTo("[10,\"row-10\"]\n[\"a\\nb\",null]\n");
     assertThat(output.flushed).isTrue();
     assertThat(output.closed).isFalse();
-    assertThatThrownBy(() -> writer.write(new SeaTunnelRow(1))).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> writer.write(new SeaTunnelRow(1)))
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -65,12 +66,16 @@ class ConsoleSinkTest {
   @Test
   void validatesFactoryAndCheckpointArguments() throws Exception {
     assertThat(new ConsoleSinkPlugin().identifier()).isEqualTo("console");
-    assertThatThrownBy(() -> new ConsoleSinkPlugin().createSink(Map.of("typo", true), null,
-        new PluginContext(new Output())))
+    assertThatThrownBy(
+            () ->
+                new ConsoleSinkPlugin()
+                    .createSink(Map.of("typo", true), null, new PluginContext(new Output())))
         .isInstanceOf(org.apache.seatunnel.common.exception.ConfigException.class);
-    assertThatThrownBy(() -> new ConsoleSink.State(-1)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new ConsoleSink.State(-1))
+        .isInstanceOf(IllegalArgumentException.class);
     try (var writer = new ConsoleSink(new Output()).createWriter(0, Optional.empty())) {
-      assertThatThrownBy(() -> writer.snapshotState(-1)).isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(() -> writer.snapshotState(-1))
+          .isInstanceOf(IllegalArgumentException.class);
     }
   }
 
@@ -83,17 +88,23 @@ class ConsoleSinkTest {
 
     @Override
     public void write(char[] value, int offset, int length) throws IOException {
-      if (failWrite) { throw new IOException("write failed"); }
+      if (failWrite) {
+        throw new IOException("write failed");
+      }
       text.append(value, offset, length);
     }
 
     @Override
     public void flush() throws IOException {
-      if (failFlush) { throw new IOException("flush failed"); }
+      if (failFlush) {
+        throw new IOException("flush failed");
+      }
       flushed = true;
     }
 
     @Override
-    public void close() { closed = true; }
+    public void close() {
+      closed = true;
+    }
   }
 }

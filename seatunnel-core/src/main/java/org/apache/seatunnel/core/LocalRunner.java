@@ -40,16 +40,22 @@ public final class LocalRunner {
     try (var sources = PluginDiscovery.fromClasspath(SourcePlugin.class);
         var sinks = PluginDiscovery.fromClasspath(SinkPlugin.class)) {
       var source = sources.get(config.sourceId()).createSource(config.sourceOptions());
-      var sink = sinks.get(config.sinkId()).createSink(config.sinkOptions(),
-          source.producedTable(), new PluginContext(output));
+      var sink =
+          sinks
+              .get(config.sinkId())
+              .createSink(config.sinkOptions(), source.producedTable(), new PluginContext(output));
       return execute(source, sink);
     }
   }
 
   /** Runs configured factories and closes every created operator, including on partial startup. */
-  public <S extends SourceSplit, R extends CheckpointState, E extends CheckpointState,
-      W extends CheckpointState, T extends Serializable> long execute(
-      SeaTunnelSource<S, R, E> source, SeaTunnelSink<W, T> sink) throws Exception {
+  public <
+          S extends SourceSplit,
+          R extends CheckpointState,
+          E extends CheckpointState,
+          W extends CheckpointState,
+          T extends Serializable>
+      long execute(SeaTunnelSource<S, R, E> source, SeaTunnelSink<W, T> sink) throws Exception {
     if (source.boundedness() != Boundedness.BOUNDED) {
       throw new IllegalArgumentException("Local baseline requires a bounded source");
     }
@@ -60,31 +66,33 @@ public final class LocalRunner {
       }
       try (SourceReader<S, R> reader = source.createReader(0, Optional.empty());
           SinkWriter<W, T> writer = sink.createWriter(0, Optional.empty())) {
-        SplitEnumerator.Context<S> context = new SplitEnumerator.Context<>() {
-          @Override
-          public int currentParallelism() {
-            return 1;
-          }
+        SplitEnumerator.Context<S> context =
+            new SplitEnumerator.Context<>() {
+              @Override
+              public int currentParallelism() {
+                return 1;
+              }
 
-          @Override
-          public void assignSplits(int readerId, List<S> splits) throws Exception {
-            checkReader(readerId);
-            reader.addSplits(splits);
-          }
+              @Override
+              public void assignSplits(int readerId, List<S> splits) throws Exception {
+                checkReader(readerId);
+                reader.addSplits(splits);
+              }
 
-          @Override
-          public void signalNoMoreSplits(int readerId) throws Exception {
-            checkReader(readerId);
-            reader.notifyNoMoreSplits();
-          }
+              @Override
+              public void signalNoMoreSplits(int readerId) throws Exception {
+                checkReader(readerId);
+                reader.notifyNoMoreSplits();
+              }
 
-          private void checkReader(int readerId) {
-            if (readerId != 0) {
-              throw new IllegalArgumentException("Unknown local reader: " + readerId);
-            }
-          }
-        };
-        try (SplitEnumerator<S, E> enumerator = source.createEnumerator(context, Optional.empty())) {
+              private void checkReader(int readerId) {
+                if (readerId != 0) {
+                  throw new IllegalArgumentException("Unknown local reader: " + readerId);
+                }
+              }
+            };
+        try (SplitEnumerator<S, E> enumerator =
+            source.createEnumerator(context, Optional.empty())) {
           reader.start();
           enumerator.start();
           enumerator.registerReader(0);
@@ -94,13 +102,16 @@ public final class LocalRunner {
             if (Thread.currentThread().isInterrupted()) {
               throw new InterruptedException("Local job interrupted");
             }
-            SourceReader.ReadStatus status = reader.pollNext(row -> {
-              if (row.getArity() != arity) {
-                throw new IllegalArgumentException("Source row does not match declared arity");
-              }
-              writer.write(row);
-              count[0]++;
-            });
+            SourceReader.ReadStatus status =
+                reader.pollNext(
+                    row -> {
+                      if (row.getArity() != arity) {
+                        throw new IllegalArgumentException(
+                            "Source row does not match declared arity");
+                      }
+                      writer.write(row);
+                      count[0]++;
+                    });
             if (status == SourceReader.ReadStatus.END_OF_INPUT) {
               writer.flush(true);
               return count[0];

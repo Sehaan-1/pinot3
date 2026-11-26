@@ -57,7 +57,8 @@ class LocalRunnerTest {
     fixture.failWrite = true;
     fixture.failClose = true;
     assertThatThrownBy(() -> new LocalRunner().execute(fixture.source(), fixture.sink()))
-        .isInstanceOf(IOException.class).hasMessage("write failed")
+        .isInstanceOf(IOException.class)
+        .hasMessage("write failed")
         .satisfies(error -> assertThat(error.getSuppressed()).hasSize(1));
     assertThat(fixture.closed).containsExactly("enumerator", "writer", "reader");
   }
@@ -67,7 +68,8 @@ class LocalRunnerTest {
     Fixture fixture = new Fixture();
     fixture.failEnumerator = true;
     assertThatThrownBy(() -> new LocalRunner().execute(fixture.source(), fixture.sink()))
-        .isInstanceOf(IOException.class).hasMessage("enumerator creation failed");
+        .isInstanceOf(IOException.class)
+        .hasMessage("enumerator creation failed");
     assertThat(fixture.closed).containsExactly("writer", "reader");
   }
 
@@ -96,56 +98,111 @@ class LocalRunnerTest {
     SeaTunnelSource<Split, ReaderState, EnumeratorState> source() {
       return new SeaTunnelSource<>() {
         @Override
-        public CatalogTable producedTable() { return fake.producedTable(); }
+        public CatalogTable producedTable() {
+          return fake.producedTable();
+        }
 
         @Override
-        public Boundedness boundedness() { return fake.boundedness(); }
+        public Boundedness boundedness() {
+          return fake.boundedness();
+        }
 
         @Override
         public SourceReader<Split, ReaderState> createReader(int id, Optional<ReaderState> state) {
           var delegate = fake.createReader(id, state);
           return new SourceReader<>() {
             @Override
-            public void start() throws Exception { delegate.start(); }
+            public void start() throws Exception {
+              delegate.start();
+            }
+
             @Override
-            public void addSplits(List<Split> splits) throws Exception { delegate.addSplits(splits); }
+            public void addSplits(List<Split> splits) throws Exception {
+              delegate.addSplits(splits);
+            }
+
             @Override
-            public void notifyNoMoreSplits() throws Exception { delegate.notifyNoMoreSplits(); }
+            public void notifyNoMoreSplits() throws Exception {
+              delegate.notifyNoMoreSplits();
+            }
+
             @Override
-            public ReadStatus pollNext(Output output) throws Exception { return delegate.pollNext(output); }
+            public ReadStatus pollNext(Output output) throws Exception {
+              return delegate.pollNext(output);
+            }
+
             @Override
-            public ReaderState snapshotState(long id) throws Exception { return delegate.snapshotState(id); }
+            public ReaderState snapshotState(long id) throws Exception {
+              return delegate.snapshotState(id);
+            }
+
             @Override
-            public void notifyCheckpointComplete(long id) throws Exception { delegate.notifyCheckpointComplete(id); }
+            public void notifyCheckpointComplete(long id) throws Exception {
+              delegate.notifyCheckpointComplete(id);
+            }
+
             @Override
-            public void notifyCheckpointAborted(long id) throws Exception { delegate.notifyCheckpointAborted(id); }
+            public void notifyCheckpointAborted(long id) throws Exception {
+              delegate.notifyCheckpointAborted(id);
+            }
+
             @Override
-            public void close() throws Exception { closed.add("reader"); delegate.close(); }
+            public void close() throws Exception {
+              closed.add("reader");
+              delegate.close();
+            }
           };
         }
 
         @Override
         public SplitEnumerator<Split, EnumeratorState> createEnumerator(
-            SplitEnumerator.Context<Split> context, Optional<EnumeratorState> state) throws Exception {
-          if (failEnumerator) { throw new IOException("enumerator creation failed"); }
+            SplitEnumerator.Context<Split> context, Optional<EnumeratorState> state)
+            throws Exception {
+          if (failEnumerator) {
+            throw new IOException("enumerator creation failed");
+          }
           var delegate = fake.createEnumerator(context, state);
           return new SplitEnumerator<>() {
             @Override
-            public void start() throws Exception { delegate.start(); }
+            public void start() throws Exception {
+              delegate.start();
+            }
+
             @Override
-            public void registerReader(int id) throws Exception { delegate.registerReader(id); }
+            public void registerReader(int id) throws Exception {
+              delegate.registerReader(id);
+            }
+
             @Override
-            public void handleSplitRequest(int id) throws Exception { delegate.handleSplitRequest(id); }
+            public void handleSplitRequest(int id) throws Exception {
+              delegate.handleSplitRequest(id);
+            }
+
             @Override
-            public void addSplitsBack(List<Split> splits, int id) throws Exception { delegate.addSplitsBack(splits, id); }
+            public void addSplitsBack(List<Split> splits, int id) throws Exception {
+              delegate.addSplitsBack(splits, id);
+            }
+
             @Override
-            public EnumeratorState snapshotState(long id) throws Exception { return delegate.snapshotState(id); }
+            public EnumeratorState snapshotState(long id) throws Exception {
+              return delegate.snapshotState(id);
+            }
+
             @Override
-            public void notifyCheckpointComplete(long id) throws Exception { delegate.notifyCheckpointComplete(id); }
+            public void notifyCheckpointComplete(long id) throws Exception {
+              delegate.notifyCheckpointComplete(id);
+            }
+
             @Override
-            public void notifyCheckpointAborted(long id) throws Exception { delegate.notifyCheckpointAborted(id); }
+            public void notifyCheckpointAborted(long id) throws Exception {
+              delegate.notifyCheckpointAborted(id);
+            }
+
             @Override
-            public void close() throws Exception { closed.add("enumerator"); delegate.close(); }
+            public void close() throws Exception {
+              closed.add("enumerator");
+              delegate.close();
+            }
           };
         }
       };
@@ -155,32 +212,55 @@ class LocalRunnerTest {
       ConsoleSink console = new ConsoleSink(output);
       return new SeaTunnelSink<>() {
         @Override
-        public Optional<SinkCommitter<String>> createCommitter() { return console.createCommitter(); }
+        public Optional<SinkCommitter<String>> createCommitter() {
+          return console.createCommitter();
+        }
 
         @Override
-        public SinkWriter<ConsoleSink.State, String> createWriter(int id, Optional<ConsoleSink.State> state) {
+        public SinkWriter<ConsoleSink.State, String> createWriter(
+            int id, Optional<ConsoleSink.State> state) {
           var delegate = console.createWriter(id, state);
           return new SinkWriter<>() {
             @Override
             public void write(SeaTunnelRow row) throws Exception {
-              if (failWrite) { throw new IOException("write failed"); }
+              if (failWrite) {
+                throw new IOException("write failed");
+              }
               delegate.write(row);
             }
+
             @Override
-            public void flush(boolean end) throws Exception { delegate.flush(end); }
+            public void flush(boolean end) throws Exception {
+              delegate.flush(end);
+            }
+
             @Override
-            public List<String> prepareCommit(long id) throws Exception { return delegate.prepareCommit(id); }
+            public List<String> prepareCommit(long id) throws Exception {
+              return delegate.prepareCommit(id);
+            }
+
             @Override
-            public ConsoleSink.State snapshotState(long id) throws Exception { return delegate.snapshotState(id); }
+            public ConsoleSink.State snapshotState(long id) throws Exception {
+              return delegate.snapshotState(id);
+            }
+
             @Override
-            public void notifyCheckpointComplete(long id) throws Exception { delegate.notifyCheckpointComplete(id); }
+            public void notifyCheckpointComplete(long id) throws Exception {
+              delegate.notifyCheckpointComplete(id);
+            }
+
             @Override
-            public void notifyCheckpointAborted(long id) throws Exception { delegate.notifyCheckpointAborted(id); }
+            public void notifyCheckpointAborted(long id) throws Exception {
+              delegate.notifyCheckpointAborted(id);
+            }
+
             @Override
             public void close() throws Exception {
               closed.add("writer");
               delegate.close();
-              if (failClose) { throw new IOException("close failed"); }
+              if (failClose) {
+                throw new IOException("close failed");
+              }
             }
           };
         }

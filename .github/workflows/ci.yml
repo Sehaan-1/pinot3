@@ -29,65 +29,11 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Temporary format application
-        run: |
-          set +e
-          ./mvnw -B -ntp spotless:apply > formatter.log 2>&1
-          status=$?
-          python3 - <<'PYCODE'
-          from pathlib import Path
-          text = '\n'.join(Path('formatter.log').read_text().splitlines()[-70:])
-          if '[ERROR]' in text:
-              for index in range(0, len(text), 2500):
-                  part = text[index:index + 2500]
-                  print(f'::error title=Format {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
-          PYCODE
-          exit "$status"
-
-      - name: Temporary formatting patch foundation
-        run: |
-          python3 - <<'PYCODE'
-          import base64, subprocess
-          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-core', 'connector-fake', 'connector-console', 'seatunnel-plugin-discovery'])
-          encoded = base64.b64encode(diff).decode()
-          for index, offset in enumerate(range(0, len(encoded), 3500)):
-              print(f'::warning title=foundation patch {index}::' + encoded[offset:offset + 3500])
-          PYCODE
-
-      - name: Temporary formatting patch cli
-        run: |
-          python3 - <<'PYCODE'
-          import base64, subprocess
-          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-cli/src/main', 'seatunnel-cli/src/test/java/org/apache/seatunnel/cli/SeaTunnelCommandTest.java', 'seatunnel-cli/src/test/java/org/apache/seatunnel/cli/PipelineIT.java'])
-          encoded = base64.b64encode(diff).decode()
-          for index, offset in enumerate(range(0, len(encoded), 3500)):
-              print(f'::warning title=cli patch {index}::' + encoded[offset:offset + 3500])
-          PYCODE
-
-      - name: Temporary formatting patch runner
-        run: |
-          python3 - <<'PYCODE'
-          import base64, subprocess
-          diff = subprocess.check_output(['git', 'diff', '--'] + ['seatunnel-cli/src/test/java/org/apache/seatunnel/cli/LocalRunnerTest.java'])
-          encoded = base64.b64encode(diff).decode()
-          for index, offset in enumerate(range(0, len(encoded), 3500)):
-              print(f'::warning title=runner patch {index}::' + encoded[offset:offset + 3500])
-          PYCODE
+      - name: Test connectors and local core
+        run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test
 
       - name: Verify runnable CLI and E2E
-        run: |
-          set +e
-          ./mvnw -B -ntp -pl seatunnel-cli -am verify > slice5.log 2>&1
-          status=$?
-          python3 - <<'PYCODE'
-          from pathlib import Path
-          text = '\n'.join(Path('slice5.log').read_text().splitlines()[-110:])
-          if '[ERROR]' in text:
-              for index in range(0, len(text), 2500):
-                  part = text[index:index + 2500]
-                  print(f'::error title=Slice 5 {index}::' + part.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
-          PYCODE
-          exit "$status"
+        run: ./mvnw -pl seatunnel-cli -am verify
 
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify

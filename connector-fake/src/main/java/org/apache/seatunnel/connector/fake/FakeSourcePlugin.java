@@ -39,7 +39,8 @@ public final class FakeSourcePlugin implements SourcePlugin {
       }
     }
     Options options = new Options(values);
-    return new FakeSource(options.get(Option.withDefault("rows", Integer.class, 10)),
+    return new FakeSource(
+        options.get(Option.withDefault("rows", Integer.class, 10)),
         options.get(Option.withDefault("start", Integer.class, 0)),
         options.get(Option.withDefault("split-size", Integer.class, 1000)));
   }

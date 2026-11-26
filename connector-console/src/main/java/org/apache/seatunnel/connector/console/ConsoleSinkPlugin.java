@@ -30,7 +30,8 @@ public final class ConsoleSinkPlugin implements SinkPlugin {
   }
 
   @Override
-  public ConsoleSink createSink(Map<String, Object> options, CatalogTable input, PluginContext context) {
+  public ConsoleSink createSink(
+      Map<String, Object> options, CatalogTable input, PluginContext context) {
     if (!options.isEmpty()) {
       throw new ConfigException("Console sink does not accept options");
     }

@@ -34,16 +34,20 @@ import org.apache.seatunnel.api.table.CatalogTable.Column;
 import org.apache.seatunnel.api.table.CatalogTable.DataType;
 import org.apache.seatunnel.api.table.SeaTunnelRow;
 
-/** Deterministic finite range source. Instances are configured once; operators are thread-confined. */
-public final class FakeSource implements SeaTunnelSource<
-    FakeSource.Split, FakeSource.ReaderState, FakeSource.EnumeratorState> {
+/**
+ * Deterministic finite range source. Instances are configured once; operators are thread-confined.
+ */
+public final class FakeSource
+    implements SeaTunnelSource<
+        FakeSource.Split, FakeSource.ReaderState, FakeSource.EnumeratorState> {
   private final long start;
   private final long end;
   private final int splitSize;
 
   public FakeSource(int rows, int start, int splitSize) {
     if (rows < 0 || splitSize <= 0) {
-      throw new IllegalArgumentException("rows must be nonnegative and split-size must be positive");
+      throw new IllegalArgumentException(
+          "rows must be nonnegative and split-size must be positive");
     }
     this.start = start;
     this.end = (long) start + rows;
@@ -63,7 +67,8 @@ public final class FakeSource implements SeaTunnelSource<
     }
   }
 
-  public record ReaderState(List<Split> remaining, boolean noMoreSplits) implements CheckpointState {
+  public record ReaderState(List<Split> remaining, boolean noMoreSplits)
+      implements CheckpointState {
     public ReaderState {
       remaining = List.copyOf(remaining);
     }
@@ -77,8 +82,10 @@ public final class FakeSource implements SeaTunnelSource<
 
   @Override
   public CatalogTable producedTable() {
-    return new CatalogTable("fake", List.of(
-        new Column("id", DataType.LONG, false), new Column("name", DataType.STRING, false)));
+    return new CatalogTable(
+        "fake",
+        List.of(
+            new Column("id", DataType.LONG, false), new Column("name", DataType.STRING, false)));
   }
 
   @Override
@@ -87,7 +94,8 @@ public final class FakeSource implements SeaTunnelSource<
   }
 
   @Override
-  public SourceReader<Split, ReaderState> createReader(int readerId, Optional<ReaderState> restored) {
+  public SourceReader<Split, ReaderState> createReader(
+      int readerId, Optional<ReaderState> restored) {
     if (readerId < 0) {
       throw new IllegalArgumentException("readerId must be nonnegative");
     }
@@ -201,8 +209,9 @@ public final class FakeSource implements SeaTunnelSource<
           remaining.addFirst(new Split(id + 1, split.end()));
         }
       }
-      return remaining.isEmpty() ? (noMoreSplits ? ReadStatus.END_OF_INPUT
-          : ReadStatus.NOTHING_AVAILABLE) : ReadStatus.MORE_AVAILABLE;
+      return remaining.isEmpty()
+          ? (noMoreSplits ? ReadStatus.END_OF_INPUT : ReadStatus.NOTHING_AVAILABLE)
+          : ReadStatus.MORE_AVAILABLE;
     }
 
     @Override
@@ -218,7 +227,8 @@ public final class FakeSource implements SeaTunnelSource<
     }
   }
 
-  private final class Enumerator extends Lifecycle implements SplitEnumerator<Split, EnumeratorState> {
+  private final class Enumerator extends Lifecycle
+      implements SplitEnumerator<Split, EnumeratorState> {
     private final Context<Split> context;
     private final Deque<Split> returned;
     private final Set<Integer> registered = new HashSet<>();
