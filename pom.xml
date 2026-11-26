@@ -51,15 +51,12 @@
 
     <!--
       Modules are added one slice at a time (see docs/ROADMAP.md).
-      Slice 1 intentionally declares no modules: the root POM alone must
-      build green (validate + Spotless + license checks) before any
-      production module lands. Each later PR uncomments/adds exactly the
-      module(s) it introduces.
+      Each PR adds exactly the module(s) it introduces.
     -->
-    <!--
     <modules>
         <module>seatunnel-common</module>
         <module>seatunnel-config</module>
+        <!--
         <module>seatunnel-api</module>
         <module>seatunnel-plugin-discovery</module>
         <module>seatunnel-formats</module>
@@ -69,8 +66,8 @@
         <module>seatunnel-transforms-v2</module>
         <module>seatunnel-connectors-v2</module>
         <module>seatunnel-e2e</module>
+        -->
     </modules>
-    -->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -365,7 +362,7 @@
                     <version>${license.plugin.version}</version>
                     <configuration>
                         <!-- mycila 4.x: <header> is a file path; inline text uses <inlineHeader>. -->
-                        <inlineHeader>Licensed to the Apache Software Foundation (ASF) under one or more
+                        <inlineHeader><![CDATA[Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements. See the NOTICE file distributed with
 this work for additional information regarding copyright ownership.
 The ASF licenses this file to You under the Apache License, Version 2.0
@@ -378,9 +375,13 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.</inlineHeader>
-                        <!-- No Java sources exist until Slice 2; flip to true then. -->
-                        <failIfMissing>false</failIfMissing>
+limitations under the License.]]></inlineHeader>
+                        <!-- Only Java sources are checked; POMs/resources are out of scope. -->
+                        <includes>
+                            <include>src/main/java/**</include>
+                            <include>src/test/java/**</include>
+                        </includes>
+                        <failIfMissing>true</failIfMissing>
                     </configuration>
                     <executions>
                         <execution>
