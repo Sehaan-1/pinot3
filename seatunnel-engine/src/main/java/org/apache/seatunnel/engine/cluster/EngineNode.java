@@ -60,6 +60,7 @@ public final class EngineNode implements Closeable {
         closer.register((Closeable) registry::close);
       }
       Config config = new Config().setClusterName(settings.clusterName());
+      config.addMapConfig(org.apache.seatunnel.engine.checkpoint.CheckpointStore.mapConfig());
       config.getJetConfig().setEnabled(false);
       config.setProperty("hazelcast.phone.home.enabled", "false");
       config.setProperty("hazelcast.shutdownhook.enabled", "false");
