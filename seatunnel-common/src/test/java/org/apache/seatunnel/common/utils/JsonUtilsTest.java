@@ -40,7 +40,9 @@ class JsonUtilsTest {
 
   @Test
   void fromJsonStringDeserializesToClass() {
-    Map<?, ?> map = JsonUtils.fromJsonString("{\"name\":\"seatunnel\"}", Map.class);
+    Map<String, Object> map =
+        JsonUtils.fromJsonString(
+            "{\"name\":\"seatunnel\"}", new TypeReference<Map<String, Object>>() {});
     Assertions.assertThat(map).containsEntry("name", "seatunnel");
   }
 
