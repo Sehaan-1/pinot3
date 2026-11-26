@@ -29,8 +29,32 @@ jobs:
           java-version: '17'
           cache: maven
 
+      # TEMPORARY DIAGNOSTIC (remove once green): surface Maven errors as
+      # annotations, since job logs are not retrievable from the sandbox.
       - name: Build, test, and verify (Spotless + license + JaCoCo)
-        run: ./mvnw -B -ntp verify
+        id: build
+        run: |
+          set +e
+          ./mvnw -B -ntp verify > maven.log 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          tail -n 40 maven.log
+
+      - name: Report Maven errors as annotations
+        if: steps.build.outputs.exit_code != '0'
+        run: |
+          grep -E "^\[ERROR\]|BUILD FAILURE|Failed to|Caused by|Tests run|FAIL" maven.log | tail -n 50 | while IFS= read -r line; do
+            esc=$(printf '%s' "$line" | sed 's/%/%25/g' | cut -c1-500)
+            echo "::error title=Maven::$esc"
+          done
+          echo "--- tail ---"
+          tail -n 30 maven.log | while IFS= read -r line; do
+            esc=$(printf '%s' "$line" | sed 's/%/%25/g' | cut -c1-500)
+            echo "::error title=Tail::$esc"
+          done
+
+      - name: Fail if build failed
+        if: steps.build.outputs.exit_code != '0'
+        run: exit 1
 
       - name: Upload Surefire reports on failure
         if: failure()
