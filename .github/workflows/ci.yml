@@ -32,6 +32,9 @@ jobs:
       - name: Test engine planning contracts
         run: ./mvnw -pl seatunnel-engine -am test
 
+      - name: Verify engine cluster and task execution
+        run: ./mvnw -pl seatunnel-engine -am verify
+
       - name: Test connectors and local core
         run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test
 
