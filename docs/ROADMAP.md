@@ -176,3 +176,15 @@ share append row/schema ownership with sql-string; no dependency/API/engine chan
 39 new integer smoke assertions +59 prior string/filter regressions and four real
 LocalRunner SQL examples passed. New Maven/JUnit/packaged CLI gates remain pending.
 Zero Actions, [skip ci] draft; no automatic merge or additional CI authorization.
+
+
+### Slice 7a8: signed decimal integer literals
+
+PR17 /7a7 explicitly merged with supplemental checks; new Maven gates remain unrun.
+7a8 extends sql-long only: decimal BIGINT literals, direct signed64 boundaries and
+constant expressions. Reuse JSqlParser/HSQLDB, JDK BigInteger.longValueExact validates
+literal range, SQL engine still owns arithmetic and overflow. No new plugin/dependency/
+API/engine changes. [Specification](SLICE-7A8.md).
+30 literal checks +37 updated integer +59 string/filter regressions and five actual
+LocalRunner SQL examples passed. JUnit/CLI/full Maven gates remain unrun. Zero Actions,
+[skip ci] draft; no automatic merge or expanded SQL scope authorized.

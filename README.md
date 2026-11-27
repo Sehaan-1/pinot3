@@ -27,8 +27,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a4 | Library-backed SQL predicate filter | Merged by request; supplemental local checks only |
 | 7a5 | SQL field selection/order/aliases | Merged by request; supplemental checks only |
 | 7a6 | Bounded SQL string functions | Merged; reactor verified in PR #16 |
-| 7a7 | Bounded SQL integer expressions | Draft; supplemental checks only |
-| 7a8+ | Broader expressions, advanced transforms, connectors | ⬜ |
+| 7a7 | Bounded SQL integer expressions | Merged by request; supplemental checks only |
+| 7a8 | Signed integer literals for sql-long | Draft; supplemental checks only |
+| 7a9+ | Broader expressions, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -260,7 +261,7 @@ using `sql-project`; the example emits `[10,100]` and `[11,121]`.
 Supports existing INT/LONG fields with `+`, `-`, `*`, unary signs and parentheses.
 Every reference is promoted to SQL BIGINT first (so INT addition does not overflow
 at 32 bits). HSQLDB owns NULL propagation and signed 64-bit overflow errors; no
-silent wrapping. Literals, division/modulo, decimal/floating math, functions, casts,
+silent wrapping. Division/modulo, decimal/floating math, functions, casts,
 parameters, qualified names and SQL statements reject before opening. Inputs follow
 shared SQL schema/binding bounds; see [contracts](docs/SLICE-7A7.md).
 
@@ -273,3 +274,25 @@ packaged CLI E2E for this slice remain unrun. No Actions started.
 `032f66f`, including previously pending JUnit and packaged CLI E2E through Slice7a6,
 then merged. Its logging fix reserves stdout for JSON data and sends logs to stderr.
 That result does not verify the new Slice7a7 code.
+
+## SQL integer literals (Slice 7a8)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-long-literals-console.conf --mode local
+```
+
+`sql-long` now also accepts signed decimal integer literals. Example:
+`expression = "id * 10 - 1", target = adjusted` produces `[10,99]` and `[11,109]`
+after projection in the example. Constant-only expressions such as `2 + 3 * 4` work
+for each input row. Leading zeroes are decimal, not octal.
+
+Literals must fit signed 64-bit bounds; direct `-9223372036854775808` is supported.
+Out-of-range literal leaves reject before open, while arithmetic overflow is delegated
+to HSQLDB and fails at preparation/evaluation. `-(9223372036854775808)` rejects because
+its unsigned literal leaf is out of range; use a directly signed minimum literal.
+NULL, strings, decimal/scientific/hex/binary literals remain unsupported, as do casts,
+functions and division/modulo. No new options or dependencies; existing schema/row/
+lifecycle bounds apply. See [contracts](docs/SLICE-7A8.md).
+
+Local adopted-parser/engine checks and five actual LocalRunner examples passed.
+New Maven/JUnit and packaged CLI verification remain unrun; no Actions started.

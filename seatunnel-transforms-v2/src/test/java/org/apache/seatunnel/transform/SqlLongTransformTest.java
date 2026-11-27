@@ -54,13 +54,59 @@ class SqlLongTransformTest {
   }
 
   @Test
+  void supportsSignedDecimalLiteralsAndConstantOnlyExpressions() throws Exception {
+    assertThat(evaluate("a * 10 + 3", 2, 0L)).isEqualTo(23L);
+    assertThat(evaluate("0", null, null)).isEqualTo(0L);
+    assertThat(evaluate("+00010", null, null)).isEqualTo(10L);
+    assertThat(evaluate("-00010", null, null)).isEqualTo(-10L);
+    assertThat(evaluate("-0", null, null)).isEqualTo(0L);
+    assertThat(evaluate("2+3*4", null, null)).isEqualTo(14L);
+    assertThat(evaluate("(-2+3)*4", null, null)).isEqualTo(4L);
+    assertThat(evaluate("9223372036854775807", null, null)).isEqualTo(Long.MAX_VALUE);
+    assertThat(evaluate("-9223372036854775808", null, null)).isEqualTo(Long.MIN_VALUE);
+    assertThat(evaluate("a+10", null, 0L)).isNull();
+  }
+
+  @Test
+  void validatesLiteralRangeAndSpellingWithoutEvaluatingArithmeticInJava() throws Exception {
+    for (String expression :
+        List.of(
+            "9223372036854775808",
+            "-9223372036854775809",
+            "+9223372036854775808",
+            "-(9223372036854775808)",
+            "1.5",
+            "1e3",
+            "0x10",
+            "B'10'",
+            "'1'",
+            "NULL",
+            "1;SELECT a"))
+      assertThatThrownBy(() -> new SqlLongTransform(table(), expression, "out"))
+          .as(expression)
+          .isInstanceOf(IllegalArgumentException.class);
+    for (String constant : List.of("9223372036854775807+1", "-(-9223372036854775808)"))
+      assertThatThrownBy(() -> evaluate(constant, null, null))
+          .isInstanceOf(IllegalStateException.class)
+          .hasCauseInstanceOf(java.sql.SQLException.class);
+    for (String expression : List.of("b+1", "b*2", "-b")) {
+      try (var transform = new SqlLongTransform(table(), expression, "out")) {
+        transform.open();
+        long bad = expression.equals("-b") ? Long.MIN_VALUE : Long.MAX_VALUE;
+        assertThatThrownBy(() -> transform.apply(new SeaTunnelRow(1, bad)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasCauseInstanceOf(java.sql.SQLException.class);
+        assertThat(transform.apply(new SeaTunnelRow(1, 2L))).hasSize(1);
+      }
+    }
+  }
+
+  @Test
   void rejectsUnsupportedAstAndUnknownNonNumericOrDecoratedFields() {
     for (String expression :
         List.of(
             "a/b",
             "a%b",
-            "a+1",
-            "1",
             "NULL",
             "CAST(a AS BIGINT)",
             "ABS(a)",

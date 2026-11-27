@@ -16,11 +16,13 @@
  */
 package org.apache.seatunnel.transform;
 
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Set;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.SignedExpression;
 import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
@@ -53,9 +55,14 @@ final class SqlLongPlan {
     }
   }
 
-  private String render(Expression expression, int depth) {
+  private void visit(int depth) {
     if (++nodes > 64 || depth > 16)
       throw new IllegalArgumentException("SQL integer expression AST exceeds limits");
+  }
+
+  private String render(Expression expression, int depth) {
+    visit(depth);
+    if (expression instanceof LongValue literal) return literal(literal, false);
     if (expression instanceof Column column) {
       if (column.getTable() != null
           || column.getArrayConstructor() != null
@@ -67,8 +74,13 @@ final class SqlLongPlan {
     if (expression instanceof Parenthesis parenthesis)
       return "(" + render(parenthesis.getExpression(), depth + 1) + ")";
     if (expression instanceof SignedExpression signed
-        && (signed.getSign() == '+' || signed.getSign() == '-'))
+        && (signed.getSign() == '+' || signed.getSign() == '-')) {
+      if (signed.getExpression() instanceof LongValue literal) {
+        visit(depth + 1);
+        return literal(literal, signed.getSign() == '-');
+      }
       return "(" + signed.getSign() + render(signed.getExpression(), depth + 1) + ")";
+    }
     if (expression instanceof Addition
         || expression instanceof Subtraction
         || expression instanceof Multiplication) {
@@ -82,5 +94,18 @@ final class SqlLongPlan {
           + ")";
     }
     throw new IllegalArgumentException("Unsupported SQL integer expression");
+  }
+
+  private static String literal(LongValue literal, boolean negative) {
+    String digits = literal.getStringValue();
+    if (digits == null || !digits.matches("[0-9]+"))
+      throw new IllegalArgumentException("Expected decimal integer literal");
+    try {
+      long value = new BigInteger((negative ? "-" : "") + digits).longValueExact();
+      return "CAST('" + Long.toString(value) + "' AS BIGINT)";
+    } catch (ArithmeticException invalid) {
+      throw new IllegalArgumentException(
+          "SQL integer literal outside signed 64-bit range", invalid);
+    }
   }
 }
