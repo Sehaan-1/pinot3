@@ -37,7 +37,7 @@ class SeaTunnelCommandTest {
     ClassLoader previous = Thread.currentThread().getContextClassLoader();
     try (var discovery = PluginDiscovery.fromClasspath(SourcePlugin.class)) {
       assertThat(discovery.identifiers())
-          .containsExactlyInAnyOrder("fake", "jdbc-postgres", "jdbc-mysql", "kafka");
+          .containsExactlyInAnyOrder("fake", "jdbc-postgres", "jdbc-mysql", "kafka", "file");
     }
     StringWriter output = new StringWriter();
     long count =

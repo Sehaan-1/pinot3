@@ -586,3 +586,7 @@ source-built copies. No Actions; streaming/JDBC acceptance rows remain unchecked
 Kafka raw-byte bounded/live source and acknowledged sink are implemented in
 `connector-kafka`; see [Kafka operations and verification limits](docs/KAFKA.md) and
 `examples/kafka/`. Real SDK/broker/build acceptance is still outstanding; no exactly-once claim.
+
+The bounded `file` connector implements CSV/JSON/text/Parquet/ORC adapters and staged
+no-clobber output. See [file contract and verification limits](docs/FILES.md) and
+`examples/file/`. Pinned columnar/packaged-build acceptance remains outstanding.

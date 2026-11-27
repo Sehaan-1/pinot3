@@ -74,6 +74,75 @@ class PipelineIT {
   }
 
   @Test
+  void packagedFileRoundtripsEveryInstalledFormat() throws Exception {
+    Path root = Files.createTempDirectory("cli-files-");
+    try {
+      String quotedRoot =
+          com.typesafe.config.ConfigValueFactory.fromAnyRef(root.toString())
+              .render(com.typesafe.config.ConfigRenderOptions.concise());
+      for (String format : List.of("csv", "json", "parquet", "orc", "text")) {
+        String target = "output." + format;
+        String transforms =
+            format.equals("text")
+                ? "transforms=[{plugin=sql-project,options.columns=\"name\"}]\n"
+                : "";
+        Result written =
+            run(
+                "source {plugin=fake,options {rows=2,start=10}}\n"
+                    + transforms
+                    + "sink {plugin=file,options {root="
+                    + quotedRoot
+                    + ",path="
+                    + target
+                    + ",format="
+                    + format
+                    + "}}");
+        assertThat(written.code()).as(written.errors()).isZero();
+        assertThat(written.output()).isEmpty();
+        assertThat(Files.isRegularFile(root.resolve(target))).isTrue();
+        String schema =
+            format.equals("text")
+                ? "[{name=name,type=STRING,nullable=false}]"
+                : "[{name=id,type=LONG,nullable=false},{name=name,type=STRING,nullable=false}]";
+        String config =
+            "source {plugin=file,options {root="
+                + quotedRoot
+                + ",paths=["
+                + target
+                + "],format="
+                + format
+                + ",schema="
+                + schema
+                + "}}\nsink.plugin=console";
+        Result read = run(config);
+        assertThat(read.code()).as(read.errors()).isZero();
+        assertThat(read.output().lines().toList())
+            .containsExactlyElementsOf(
+                format.equals("text")
+                    ? List.of("[\"row-10\"]", "[\"row-11\"]")
+                    : List.of("[10,\"row-10\"]", "[11,\"row-11\"]"));
+        byte[] prior = Files.readAllBytes(root.resolve(target));
+        Result existing =
+            run(
+                "source {plugin=fake,options.rows=1}\nsink {plugin=file,options {root="
+                    + quotedRoot
+                    + ",path="
+                    + target
+                    + ",format="
+                    + (format.equals("text") ? "json" : format)
+                    + "}}");
+        assertThat(existing.code()).isEqualTo(1);
+        assertThat(Files.readAllBytes(root.resolve(target))).isEqualTo(prior);
+      }
+    } finally {
+      try (var paths = Files.walk(root)) {
+        for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList())
+          Files.deleteIfExists(path);
+      }
+    }
+  }
+
+  @Test
   @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(
       named = "PINOT_KAFKA_BOOTSTRAP",
       matches = ".+")
