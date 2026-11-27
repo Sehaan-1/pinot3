@@ -136,5 +136,17 @@ profiles (PR #22).
 PR #12 (7a3 JSON-path) merged explicitly by request; Maven gates remain unverified.
 7a4 adds `sql-filter` only: JSqlParser 4.9 (Apache-2.0 option) + HSQLDB 2.7.4
 (permissive), transforms module, schema-preserving filter, parameterized private SQL.
-See [specification](SLICE-7A4.md). No API engine coupling. SQL projection remains next.
+See [specification](SLICE-7A4.md). No API engine coupling. PR #13 merged by explicit
+request; its unrun Maven gates were not waived for future slices.
 Affected Maven tests, CLI E2E and full reactor gates remain unrun; no CI reservation.
+
+
+### Slice 7a5: field-only SQL projection
+
+`sql-project` parses a SELECT list with existing JSqlParser 4.9 (Apache-2.0 option),
+compiles an allowlisted AST and reuses the existing positional mapping implementation.
+No new dependency, SQL evaluator or engine/API coupling. Select/order/drop/explicit
+alias only; computed expressions remain deferred. [Specification](SLICE-7A5.md).
+62 supplemental assertions and the actual LocalRunner -> FakeSource -> sql-filter ->
+sql-project -> ConsoleSink example passed. Pinned Maven/JUnit and packaged CLI E2E
+remain unrun. Zero Actions, `[skip ci]` draft PR; no automatic merge authorization.
