@@ -21,15 +21,35 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
 
 class ClusterCommandTest {
-  @Test void helpDoesNotRequireLocalConfigAndInvalidEndpointNeverMakesRequest() {
-    var out=new StringWriter(); var err=new StringWriter();
-    assertThat(SeaTunnelCommand.execute(new String[]{"cluster","--help"},out,err)).isZero();
-    assertThat(out.toString()).contains("submit","cancel"); assertThat(err.toString()).isEmpty();
-    out=new StringWriter(); err=new StringWriter();
-    assertThat(SeaTunnelCommand.execute(new String[]{"cluster","status","--endpoint","file:///tmp/no","--job","00000000-0000-0000-0000-000000000000"},out,err)).isEqualTo(1);
-    assertThat(out.toString()).isEmpty(); assertThat(err.toString()).contains("Cluster request failed");
+  @Test
+  void helpDoesNotRequireLocalConfigAndInvalidEndpointNeverMakesRequest() {
+    var out = new StringWriter();
+    var err = new StringWriter();
+    assertThat(SeaTunnelCommand.execute(new String[] {"cluster", "--help"}, out, err)).isZero();
+    assertThat(out.toString()).contains("submit", "cancel");
+    assertThat(err.toString()).isEmpty();
+    out = new StringWriter();
+    err = new StringWriter();
+    assertThat(
+            SeaTunnelCommand.execute(
+                new String[] {
+                  "cluster",
+                  "status",
+                  "--endpoint",
+                  "file:///tmp/no",
+                  "--job",
+                  "00000000-0000-0000-0000-000000000000"
+                },
+                out,
+                err))
+        .isEqualTo(1);
+    assertThat(out.toString()).isEmpty();
+    assertThat(err.toString()).contains("Cluster request failed");
   }
-  @Test void missingLocalConfigStillReturnsUsageError() {
-    assertThat(SeaTunnelCommand.execute(new String[]{},new StringWriter(),new StringWriter())).isEqualTo(2);
+
+  @Test
+  void missingLocalConfigStillReturnsUsageError() {
+    assertThat(SeaTunnelCommand.execute(new String[] {}, new StringWriter(), new StringWriter()))
+        .isEqualTo(2);
   }
 }

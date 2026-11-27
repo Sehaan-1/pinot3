@@ -18,11 +18,19 @@ package org.apache.seatunnel.engine.submission;
 
 /** Stable service-level errors, independent of the HTTP transport. */
 public final class SubmissionException extends RuntimeException {
-  public enum Reason { NOT_FOUND, CONFLICT }
+  public enum Reason {
+    NOT_FOUND,
+    CONFLICT
+  }
+
   private final Reason reason;
+
   public SubmissionException(Reason reason, String message) {
     super(message);
     this.reason = reason;
   }
-  public Reason reason() { return reason; }
+
+  public Reason reason() {
+    return reason;
+  }
 }

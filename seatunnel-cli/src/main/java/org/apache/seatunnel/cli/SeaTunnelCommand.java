@@ -29,7 +29,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-/** Local pipeline and HTTP cluster CLI; stdout is reserved for data rows, stderr for diagnostics. */
+/**
+ * Local pipeline and HTTP cluster CLI; stdout is reserved for data rows, stderr for diagnostics.
+ */
 @Command(
     name = "seatunnel",
     subcommands = ClusterCommand.class,
@@ -55,7 +57,8 @@ public final class SeaTunnelCommand implements Callable<Integer> {
           new CommandLine(this), "Only --mode local is supported");
     }
     if (config == null) {
-      throw new CommandLine.ParameterException(new CommandLine(this), "Missing required option: --config");
+      throw new CommandLine.ParameterException(
+          new CommandLine(this), "Missing required option: --config");
     }
     new LocalRunner().run(JobConfig.parse(Config.parseFile(config.toFile())), output);
     return 0;

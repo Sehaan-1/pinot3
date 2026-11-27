@@ -21,18 +21,29 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class SubmissionValidationTest {
-  @Test void boundsAndDetachesParametersAndValidatesNames() {
-    assertThatThrownBy(() -> JobSubmissionService.validateDefinition("../class")).isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> JobSubmissionService.validateDefinition(null)).isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> JobSubmissionService.validateParameters(null)).isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> JobSubmissionService.validateParameters(Map.of("key", "x".repeat(4097)))).isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> JobSubmissionService.validateParameters(Map.of("bad key", "value"))).isInstanceOf(IllegalArgumentException.class);
-    var tooMany = new java.util.HashMap<String,String>();
-    for (int i=0;i<65;i++) tooMany.put("key"+i,"value");
-    assertThatThrownBy(() -> JobSubmissionService.validateParameters(tooMany)).isInstanceOf(IllegalArgumentException.class);
-    var original = new java.util.HashMap<String,String>(); original.put("key","value");
-    var detached = JobSubmissionService.validateParameters(original); original.clear();
-    assertThat(detached).containsEntry("key","value");
-    assertThatThrownBy(() -> detached.put("x","y")).isInstanceOf(UnsupportedOperationException.class);
+  @Test
+  void boundsAndDetachesParametersAndValidatesNames() {
+    assertThatThrownBy(() -> JobSubmissionService.validateDefinition("../class"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> JobSubmissionService.validateDefinition(null))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> JobSubmissionService.validateParameters(null))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(
+            () -> JobSubmissionService.validateParameters(Map.of("key", "x".repeat(4097))))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> JobSubmissionService.validateParameters(Map.of("bad key", "value")))
+        .isInstanceOf(IllegalArgumentException.class);
+    var tooMany = new java.util.HashMap<String, String>();
+    for (int i = 0; i < 65; i++) tooMany.put("key" + i, "value");
+    assertThatThrownBy(() -> JobSubmissionService.validateParameters(tooMany))
+        .isInstanceOf(IllegalArgumentException.class);
+    var original = new java.util.HashMap<String, String>();
+    original.put("key", "value");
+    var detached = JobSubmissionService.validateParameters(original);
+    original.clear();
+    assertThat(detached).containsEntry("key", "value");
+    assertThatThrownBy(() -> detached.put("x", "y"))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 }

@@ -45,15 +45,26 @@ public final class JobRestServer implements AutoCloseable {
   public static final int MAX_BODY_BYTES = 65536;
   private final Server server;
   private final ServerConnector connector;
-  private final ObjectMapper json = JsonMapper.builder()
-      .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
-      .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-      .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
-      .withCoercionConfig(com.fasterxml.jackson.databind.type.LogicalType.Textual, config -> {
-        config.setCoercion(com.fasterxml.jackson.databind.cfg.CoercionInputShape.Integer, com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
-        config.setCoercion(com.fasterxml.jackson.databind.cfg.CoercionInputShape.Float, com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
-        config.setCoercion(com.fasterxml.jackson.databind.cfg.CoercionInputShape.Boolean, com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
-      }).build();
+  private final ObjectMapper json =
+      JsonMapper.builder()
+          .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+          .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+          .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+          .withCoercionConfig(
+              com.fasterxml.jackson.databind.type.LogicalType.Textual,
+              config -> {
+                config.setCoercion(
+                    com.fasterxml.jackson.databind.cfg.CoercionInputShape.Integer,
+                    com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
+                config.setCoercion(
+                    com.fasterxml.jackson.databind.cfg.CoercionInputShape.Float,
+                    com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
+                config.setCoercion(
+                    com.fasterxml.jackson.databind.cfg.CoercionInputShape.Boolean,
+                    com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
+              })
+          .build();
+
   private record SubmitRequest(String definition, Map<String, String> parameters) {}
 
   public JobRestServer(JobSubmissionService service, String bindAddress, int port) {
@@ -74,76 +85,131 @@ public final class JobRestServer implements AutoCloseable {
     connector.setPort(port);
     connector.setIdleTimeout(10000);
     server.addConnector(connector);
-    server.setHandler(new AbstractHandler() {
-      @Override public void handle(String target, Request base, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        base.setHandled(true);
-        response.setHeader("Cache-Control", "no-store");
-        response.setHeader("X-Content-Type-Options", "nosniff");
-        try { route(service, target, request, response); }
-        catch (SubmissionException error) {
-          send(response, error.reason() == SubmissionException.Reason.NOT_FOUND ? 404 : 409, Map.of("error",error.getMessage()));
-        } catch (JsonProcessingException | IllegalArgumentException invalid) {
-          send(response,400,Map.of("error","Invalid request"));
-        } catch (RuntimeException failure) {
-          send(response,500,Map.of("error","Internal server error"));
-        }
-      }
-    });
+    server.setHandler(
+        new AbstractHandler() {
+          @Override
+          public void handle(
+              String target, Request base, HttpServletRequest request, HttpServletResponse response)
+              throws IOException {
+            base.setHandled(true);
+            response.setHeader("Cache-Control", "no-store");
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            try {
+              route(service, target, request, response);
+            } catch (SubmissionException error) {
+              send(
+                  response,
+                  error.reason() == SubmissionException.Reason.NOT_FOUND ? 404 : 409,
+                  Map.of("error", error.getMessage()));
+            } catch (JsonProcessingException | IllegalArgumentException invalid) {
+              send(response, 400, Map.of("error", "Invalid request"));
+            } catch (RuntimeException failure) {
+              send(response, 500, Map.of("error", "Internal server error"));
+            }
+          }
+        });
   }
+
   public synchronized void start() throws Exception {
     if (server.isStarted()) throw new IllegalStateException("Server already started");
-    try { server.start(); }
-    catch (Exception failure) {
-      try { server.stop(); } catch (Exception cleanup) { failure.addSuppressed(cleanup); }
+    try {
+      server.start();
+    } catch (Exception failure) {
+      try {
+        server.stop();
+      } catch (Exception cleanup) {
+        failure.addSuppressed(cleanup);
+      }
       throw failure;
     }
   }
+
   public int port() {
     int port = connector.getLocalPort();
     if (port <= 0) throw new IllegalStateException("Server not started");
     return port;
   }
-  private void route(JobSubmissionService service, String path, HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+  private void route(
+      JobSubmissionService service,
+      String path,
+      HttpServletRequest request,
+      HttpServletResponse response)
+      throws IOException {
     String method = request.getMethod();
     if ("/v1/jobs".equals(path)) {
-      if ("GET".equals(method)) { send(response,200,Map.of("jobs",service.list())); return; }
-      if (!"POST".equals(method)) { method(response,"GET, POST"); return; }
-      String type = request.getContentType();
-      if (type == null || !type.split(";",2)[0].trim().toLowerCase(Locale.ROOT).equals("application/json")) {
-        send(response,415,Map.of("error","application/json required")); return;
+      if ("GET".equals(method)) {
+        send(response, 200, Map.of("jobs", service.list()));
+        return;
       }
-      if (request.getContentLengthLong() > MAX_BODY_BYTES) { tooLarge(response); return; }
-      byte[] body = request.getInputStream().readNBytes(MAX_BODY_BYTES+1);
-      if (body.length > MAX_BODY_BYTES) { tooLarge(response); return; }
-      SubmitRequest submission = json.readValue(body,SubmitRequest.class);
+      if (!"POST".equals(method)) {
+        method(response, "GET, POST");
+        return;
+      }
+      String type = request.getContentType();
+      if (type == null
+          || !type.split(";", 2)[0].trim().toLowerCase(Locale.ROOT).equals("application/json")) {
+        send(response, 415, Map.of("error", "application/json required"));
+        return;
+      }
+      if (request.getContentLengthLong() > MAX_BODY_BYTES) {
+        tooLarge(response);
+        return;
+      }
+      byte[] body = request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);
+      if (body.length > MAX_BODY_BYTES) {
+        tooLarge(response);
+        return;
+      }
+      SubmitRequest submission = json.readValue(body, SubmitRequest.class);
       if (submission == null) throw new IllegalArgumentException("Request required");
       var accepted = service.submit(submission.definition(), submission.parameters());
-      response.setHeader("Location", "/v1/jobs/"+accepted.jobId());
-      send(response,202,accepted); return;
+      response.setHeader("Location", "/v1/jobs/" + accepted.jobId());
+      send(response, 202, accepted);
+      return;
     }
-    if (!path.startsWith("/v1/jobs/")) { send(response,404,Map.of("error","Unknown endpoint")); return; }
+    if (!path.startsWith("/v1/jobs/")) {
+      send(response, 404, Map.of("error", "Unknown endpoint"));
+      return;
+    }
     String suffix = path.substring("/v1/jobs/".length());
     boolean cancel = suffix.endsWith("/cancel");
-    String text = cancel ? suffix.substring(0,suffix.length()-7) : suffix;
-    if (!text.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+    String text = cancel ? suffix.substring(0, suffix.length() - 7) : suffix;
+    if (!text.matches(
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
       throw new IllegalArgumentException("Invalid job ID");
     UUID id = UUID.fromString(text);
     if (cancel) {
-      if (!"POST".equals(method)) { method(response,"POST"); return; }
-      send(response,200,service.cancel(id));
-    } else if ("GET".equals(method)) send(response,200,service.status(id));
-    else if ("DELETE".equals(method)) { service.delete(id); response.setStatus(204); }
-    else method(response,"GET, DELETE");
+      if (!"POST".equals(method)) {
+        method(response, "POST");
+        return;
+      }
+      send(response, 200, service.cancel(id));
+    } else if ("GET".equals(method)) send(response, 200, service.status(id));
+    else if ("DELETE".equals(method)) {
+      service.delete(id);
+      response.setStatus(204);
+    } else method(response, "GET, DELETE");
   }
-  private void tooLarge(HttpServletResponse response) throws IOException { send(response,413,Map.of("error","Request body too large")); }
-  private void method(HttpServletResponse response,String allow) throws IOException {
-    response.setHeader("Allow",allow); send(response,405,Map.of("error","Method not allowed"));
+
+  private void tooLarge(HttpServletResponse response) throws IOException {
+    send(response, 413, Map.of("error", "Request body too large"));
   }
-  private void send(HttpServletResponse response,int status,Object value) throws IOException {
+
+  private void method(HttpServletResponse response, String allow) throws IOException {
+    response.setHeader("Allow", allow);
+    send(response, 405, Map.of("error", "Method not allowed"));
+  }
+
+  private void send(HttpServletResponse response, int status, Object value) throws IOException {
     response.setStatus(status);
     response.setContentType("application/json");
     response.setCharacterEncoding("UTF-8");
     response.getOutputStream().write(json.writeValueAsBytes(value));
   }
-  @Override public synchronized void close() throws Exception { server.stop(); }
+
+  @Override
+  public synchronized void close() throws Exception {
+    server.stop();
+  }
 }

@@ -20,7 +20,7 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 6a | `seatunnel-engine`: logical DAG + physical task planning | ✅ Merged |
 | 6b | Embedded Master/Worker and bounded remote tasks | ✅ Merged |
 | 6c | Replicated checkpoint decisions, split state and explicit recovery | ✅ Merged |
-| 6d | Installed job submission REST + HTTP cluster client | In progress |
+| 6d | Installed job submission REST + HTTP cluster client | In review — PR #9 |
 | 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
