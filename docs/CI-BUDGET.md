@@ -171,3 +171,9 @@ User explicitly authorized the next implementation PR's merge in "merge then nex
 then merge". This scopes an unverified-merge exception to7b1, not subsequent Stage7
 PRs or CI. Reserved25m/observed14m45s unchanged, both one-time Actions grants spent.
 New API/transform Maven/JUnit/packaged CLI gates remain unrun despite local evidence.
+
+
+Slice7b2 starts zero Actions, [skip ci]. User's "next then merge" grants an explicit
+unverified-merge exception for this one next PR only, not more CI or Stage7-wide merges.
+Reserved25m/observed14m45s unchanged; grants spent. Local shaded-Guava/Jackson checks
+are supplemental; new Maven/JUnit/packaged CLI/full reactor gates remain unrun.

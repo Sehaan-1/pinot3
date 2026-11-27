@@ -36,11 +36,19 @@ final class StringOptions {
   }
 
   static List<String> fields(Map<String, Object> options) {
-    if (!(options.get("fields") instanceof List<?> values)
+    return strings(options, "fields", "Expected 1..128 string field names");
+  }
+
+  static List<String> strings(Map<String, Object> options, String key) {
+    return strings(options, key, "Expected 1..128 string values for " + key);
+  }
+
+  private static List<String> strings(Map<String, Object> options, String key, String message) {
+    if (!(options.get(key) instanceof List<?> values)
         || values.isEmpty()
         || values.size() > 128
         || values.stream().anyMatch(value -> !(value instanceof String)))
-      throw new IllegalArgumentException("Expected 1..128 string field names");
+      throw new IllegalArgumentException(message);
     return values.stream().map(String.class::cast).toList();
   }
 }

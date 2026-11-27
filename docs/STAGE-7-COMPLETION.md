@@ -62,7 +62,7 @@ verification evidence, not merely an opened PR or a library dependency in a POM.
 
 | Done | Deliverable | Adopt / adapt (pins at implementation entry) | Public contract / required real E2E |
 |---|---|---|---|
-| [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | 7b1 introduces native row-kind/extractor and preservation (local verification only). FilterToken remains outstanding. Full schema/lifecycle/null/error tests and installed chain E2E remain required before checking off this bundle. |
+| [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | 7b1 native row-kind/extractor and7b2 exact-token filter are implemented with local supplemental checks. Maven/JUnit/packaged CLI gates remain unrun; do not check off this bundle until verified. TableMerge/runtime work is separate below. |
 | [ ] | Multi-input prerequisite + TableMerge | Existing DAG/task/transport primitives; library serialization; no new scheduler in transforms | Define schema-aligned table union vs relational join explicitly (union is proposed baseline); multiple input lifecycle/backpressure/end-of-input, failure cleanup and real multi-source E2E. Unary chains alone do not satisfy this. |
 | [ ] |7d JDBC PostgreSQL source + sink | HikariCP + pgjdbc (Apache-2.0 / BSD-style); JDBC prepared statements | Bounded partitioned read, explicit schema, typed binding, cursor/resource ownership, batch flush/rollback/restore contracts, no false exactly-once claim. Real PostgreSQL round-trip and failure tests. JDBC specification required at implementation entry. |
 | [ ] |7d MySQL adapter and driver decision | JDBC/HikariCP reuse; driver license/distribution review first | Real MySQL round-trip/schema/type/quoting/NULL tests. pgjdbc/HSQLDB evidence does not count. Driver must be reproducibly loadable in installed CLI. |
@@ -137,7 +137,7 @@ are merged/verified, except a new explicit scoped waiver from the user.
 Stage7 is complete only when every mandatory row above is implemented, reviewed,
 merged and has its required verification evidence, with all delivery guarantees
 accurate and all known blockers resolved. Optional7c is listed as deferred, not done.
-There is no Stage7 completion claim in this planning PR. Current production progress:7b1 native row-kind carrier/extractor and preservation,
-with supplemental local checks only. Next: remaining7b transform/runtime deliverables,
-then the JDBC connector (first connector) and remaining dependency-ordered rows. No
+There is no Stage7 completion claim in this planning PR. Current production progress:7b1 native row-kind carrier/extractor/preservation and
+7b2 literal-token filtering, with supplemental local checks only. Next: multi-input/
+TableMerge/runtime prerequisites, then JDBC (first connector) and the remaining rows. No
 mandatory row above is fully complete/verified yet.

@@ -54,7 +54,9 @@ class RowKindTransformsTest {
               new SqlStringTransform(input, "UPPER(name)", "upper"),
               new SqlLongTransform(input, "id*10", "scaled"),
               new SqlFilterTransform(input, "id=1"),
-              new RowKindExtractorTransform(input, "op"))) {
+              new RowKindExtractorTransform(input, "op"),
+              new FilterTokenTransform(
+                  input, "name", "|", List.of("a"), FilterTokenTransform.MatchMode.ANY))) {
         try (transform) {
           transform.open();
           var result = transform.apply(row);

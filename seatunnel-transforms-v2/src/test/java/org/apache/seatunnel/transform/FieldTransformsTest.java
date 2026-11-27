@@ -116,6 +116,7 @@ class FieldTransformsTest {
           .containsExactly(
               "field-copy",
               "field-rename",
+              "filter-token",
               "json-path",
               "row-kind-extractor",
               "sql-filter",

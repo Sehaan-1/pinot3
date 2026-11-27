@@ -32,7 +32,8 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a9 | Plain string and NULL literals for sql-string | Merged by request; supplemental checks only |
 | 7a10 | Bounded SQL IN and BETWEEN filters | Merged by request; supplemental checks only |
 | 7a11 | Bounded SQL LIKE and ESCAPE filters | Merged by request; supplemental checks only |
-| 7b1 | Native row kinds and metadata extractor | Local checks; Maven gates unrun |
+| 7b1 | Native row kinds and metadata extractor | Merged by request; Maven gates unrun |
+| 7b2 | Exact token filters (ANY/ALL) | Local checks; Maven gates unrun |
 | 7b remainder, 7d–7k | Remaining advanced transforms and connectors | Scope authorized; implementation outstanding |
 | 7c | Spark/Flink translation | Optional; deferred |
 
@@ -404,3 +405,27 @@ transaction semantics. CDC, streaming execution and other Stage7 work remain pen
 
 Local API/serialization/transform/regression checks and real LocalRunner examples
 passed; Maven/JUnit/packaged CLI gates are unrun. No Actions started.
+
+## Exact token filtering (Slice 7b2)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-filter-token-console.conf --mode local
+```
+
+`filter-token` requires exactly `field`, `delimiter`, `tokens`, `mode`. Example:
+`field = name, delimiter = "-", tokens = ["10", "12"], mode = any`. It filters fake
+rows to `[10,"row-10"]` and `[12,"row-12"]` in the example. `any` keeps a row with at
+least one requested token; `all` requires every requested distinct token.
+
+Guava splits using a **literal** delimiter, never regex. Matches are exact, case-
+sensitive and untrimmed; no substring, CSV quote or Unicode normalization semantics.
+Null selected fields drop; nonstring values fail. Tokens must be1..128 distinct
+nonempty strings<=4096 characters, delimiter1..128 characters, input<=1Mi UTF-16 units.
+Tokenization is lazy, keeps at most128 matches and short-circuits when satisfied.
+Retained rows are the original objects: schema, values and native row kinds unchanged.
+CDC before/after images are filtered independently; this is not a changelog retraction
+reconciler. [Full contracts](docs/SLICE-7B2.md).
+
+Local operator/regression checks and ten actual LocalRunner examples passed using
+supplemental dependencies. New Maven/JUnit/packaged CLI gates remain unrun; no Actions.
+Remaining Stage7 runtime/TableMerge and connector work is still outstanding.
