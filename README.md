@@ -28,8 +28,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a5 | SQL field selection/order/aliases | Merged by request; supplemental checks only |
 | 7a6 | Bounded SQL string functions | Merged; reactor verified in PR #16 |
 | 7a7 | Bounded SQL integer expressions | Merged by request; supplemental checks only |
-| 7a8 | Signed integer literals for sql-long | Draft; supplemental checks only |
-| 7a9+ | Broader expressions, advanced transforms, connectors | ⬜ |
+| 7a8 | Signed integer literals for sql-long | Merged by request; supplemental checks only |
+| 7a9 | Plain string and NULL literals for sql-string | Draft; supplemental checks only |
+| 7a10+ | Broader expressions, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -235,7 +236,7 @@ seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-stri
 For example, `expression = "UPPER(name)", target = upper_name`. Supports STRING field
 references plus nested `UPPER(x)`, `LOWER(x)`, `CONCAT(x,y)` and `COALESCE(x,y[, ...])`
 (up to eight COALESCE arguments). HSQLDB owns casing and NULL semantics; this is not a
-promise of vendor-independent SQL behavior. Literals, arithmetic, casts, parameters,
+promise of vendor-independent SQL behavior. Arithmetic, casts, parameters,
 qualified names and other/decorated functions are intentionally rejected. Use
 `sql-project` afterward to select the computed field and rename/drop originals.
 
@@ -296,3 +297,23 @@ lifecycle bounds apply. See [contracts](docs/SLICE-7A8.md).
 
 Local adopted-parser/engine checks and five actual LocalRunner examples passed.
 New Maven/JUnit and packaged CLI verification remain unrun; no Actions started.
+
+## SQL plain string and NULL literals (Slice 7a9)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-string-literals-console.conf --mode local
+```
+
+`sql-string` now supports standard single-quoted strings and `NULL` in the existing
+function surface, for example `COALESCE(name, 'unknown')` or `CONCAT('user-', name)`.
+Constant-only expressions such as `UPPER('Ada')` and `NULL` work per input row too.
+Use doubled apostrophes (`'O''Reilly'`); backslashes are ordinary characters, not
+escapes. Unicode and empty strings are supported. JSqlParser owns literal parsing/
+serialization, and HSQLDB owns NULL/function behavior. Prefixes/dialect syntax such
+as `N'x'`, `E'x'`, binary literals and dollar quotes remain unsupported, as do numeric/
+date literals, casts, arithmetic, parameters and other functions.
+
+The example emits `[10,"USER-ROW-10"]` and `[11,"USER-ROW-11"]`. No new plugin/options/
+dependencies; existing schema/lifecycle/size bounds apply. See [contracts](docs/SLICE-7A9.md).
+Local parser/engine checks and six real LocalRunner examples passed. New Maven/JUnit,
+packaged CLI and full reactor gates remain unrun. No Actions started.

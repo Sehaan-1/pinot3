@@ -258,6 +258,15 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineComputesWithStringLiterals() throws Exception {
+    Result result =
+        run(Files.readString(Path.of("..", "examples", "fake-sql-string-literals-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[10,\"USER-ROW-10\"]", "[11,\"USER-ROW-11\"]");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(
