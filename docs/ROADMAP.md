@@ -6,6 +6,19 @@
 > POM's `dependencyManagement` at the slice that first adopts them; connector
 > SDK versions are pinned in their own PR (not upfront) to avoid stale pins.
 
+## Current Stage 7 program
+
+The user authorized **all remaining Stage7** after PR21 merged. The authoritative
+remaining scope/dependency/acceptance checklist is
+[Stage7 completion program](STAGE-7-COMPLETION.md). No more isolated SQL operator
+expansions are planned as a substitute for advanced transforms/connectors. Translation
+remains optional/deferred. This is a plan, not a claim those connectors are implemented.
+
+PR numbers in the original roadmap were estimates, not reserved identities. The
+index below distinguishes actual merged PRs from planned future deliverables.
+PR16 verified through7a6; later7a7–7a11 have supplemental checks/unverified merges.
+No new Actions allocation or automatic merge permission accompanies this program.
+
 ## Ground rules (apply to every PR)
 
 - **One slice = one PR.** Single responsibility, bounded diff, one verification command.
@@ -25,10 +38,10 @@ PR #1  Scaffold (root POM, wrapper, CI)
             ├─ PR #4  Plugin discovery + Formats
             │    └─ PR #5  Core + CLI + Fake + Console  (first runnable pipeline)
             │         └─ PR #6–#9  Engine / Zeta (DAG → cluster → checkpoint → submit/REST)
-            │              └─ PR #10–#11  Transforms v2
-            │                   └─ PR #13+  Connectors (one per PR, Testcontainers E2E)
+            │              └─ Stage7a/7b  Transforms v2
+            │                   └─ Stage7d–7k  Connectors (one per PR, real service E2E)
             │                        └─ PR #21  E2E harness   └─ PR #22  Distribution
-            └─ PR #12  Translation (Spark/Flink) — OPTIONAL, deferrable
+            └─ Stage7c  Translation (Spark/Flink) — OPTIONAL, deferrable
 ```
 
 ## PR index
@@ -47,19 +60,27 @@ PR #1  Scaffold (root POM, wrapper, CI)
 | #10 | 7a1 Field transforms + local chains | `seatunnel-transforms-v2`, discovery/core/CLI integration | JDK ServiceLoader and existing Typesafe Config 1.4.3; no new deps | FieldRename, Copy, ordered local chain lifecycle + E2E | `./mvnw -pl seatunnel-transforms-v2,seatunnel-core -am test` + CLI verify |
 | #11 | 7a2 Literal strings | `seatunnel-transforms-v2` | JDK String.replace, String.split + Pattern.quote; no new dependencies | Literal replace, bounded split, local chain E2E | Affected tests + CLI verify (unrun while CI budget is fully allocated) |
 | #12 | 7a3 JSON-path | `seatunnel-transforms-v2` | `com.jayway.jsonpath:json-path:2.9.0`, Jackson 2.17.1, managed json-smart/accessors-smart 2.5.2 | Schema-aware bounded JSON extraction (trusted queries) | Affected tests + CLI verify (unrun; no CI allocation) |
-| Next | 7a4 SQL/filter | `seatunnel-transforms-v2` | Adopt/pin JSqlParser before implementation | SQL and Filter — deferred from original broad 7a | Affected tests + real pipeline E2E |
+| #13 | 7a4 SQL filter | `seatunnel-transforms-v2` | JSqlParser4.9 + HSQLDB2.7.4 | Schema-bound SQL truth filtering | Merged; included in PR16 reactor verification |
+| #14 | 7a5 SQL field projection | `seatunnel-transforms-v2` | Existing JSqlParser | Field selection/order/aliases | Merged; included in PR16 reactor verification |
+| #15 | 7a6 SQL string expressions | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bounded string functions | Merged; included in PR16 reactor verification |
+| #16 | Verification/logging fix | `seatunnel-cli`, CI | Existing Logback | stderr logs, JSON-only stdout | Full reactor verify passed at032f66f |
+| #17 | 7a7 SQL LONG expressions | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bounded BIGINT arithmetic | Merged explicitly; local checks, new Maven gates unrun |
+| #18 | 7a8 integer literals | `seatunnel-transforms-v2` | Existing parser/HSQLDB + JDK BigInteger | Signed decimal literals | Merged explicitly; local checks, new Maven gates unrun |
+| #19 | 7a9 string/NULL literals | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Plain SQL strings and NULL | Merged explicitly; local checks, new Maven gates unrun |
+| #20 | 7a10 IN/BETWEEN | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bounded predicates | Merged explicitly; local checks, new Maven gates unrun |
+| #21 | 7a11 LIKE/ESCAPE | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bound literal patterns, engine NULL semantics | Merged explicitly; local checks, new Maven gates unrun |
 | Later | 7b Transforms (advanced) | `seatunnel-transforms-v2` | *(none new)* | TableMerge, RowKindExtractor, FilterToken, … | `./mvnw -pl seatunnel-transforms-v2 -am test` |
 | Optional | 7c Translation | `seatunnel-translation-flink`, `seatunnel-translation-spark` | Flink 1.19 / Spark 3.5 (pin at slice start) — **OPTIONAL** | Translation layer (only if Spark/Flink interop is in scope) | Deferred until scope is confirmed |
-| #13 | 7d JDBC | `connector-jdbc` (source + sink) | `com.zaxxer:HikariCP:5.1.0`, PostgreSQL/MySQL JDBC drivers, `org.testcontainers:testcontainers-bom:1.20.0` | `JdbcSource`/`JdbcSink` | Testcontainers E2E (real Postgres/MySQL) |
-| #14 | 7e Kafka | `connector-kafka` (source + sink) | `org.apache.kafka:kafka-clients:3.9.0` | `KafkaSource`/`KafkaSink` | Testcontainers E2E (real Kafka) |
-| #15 | 7f File | `connector-file` (local FS) | `org.apache.hadoop:hadoop-client` (pin at slice start) | `FileSource`/`FileSink` (CSV/JSON/Parquet/ORC/Text) | E2E on local FS |
-| #16 | 7g Redis | `connector-redis` | `redis.clients:jedis` (pin at slice start) | `RedisSource`/`RedisSink` | Testcontainers E2E |
-| #17 | 7h MongoDB | `connector-mongodb` | `org.mongodb:mongodb-driver-sync` (pin at slice start) | `MongoSource`/`MongoSink` | Testcontainers E2E |
-| #18 | 7i HTTP | `connector-http` | `com.squareup.okhttp3:okhttp` (pin at slice start) | `HttpSource`/`HttpSink` | WireMock/Testcontainers E2E |
-| #19 | 7j CDC | `connector-cdc` (Debezium) | `io.debezium:debezium-api` + `debezium-embedded` (pin at slice start) | `CdcSource` (MySQL/Postgres) | Testcontainers E2E |
-| #20 | 7k Object storage | `connector-s3`, `connector-gcs`, `connector-azure` | AWS SDK v2 / Google Cloud Storage / Azure Storage (pin per PR) | Object-storage source/sink | LocalStack/Testcontainers E2E |
-| #21 | 8 E2E harness | `seatunnel-e2e` | `org.awaitility:awaitility` (pin at slice start) | Shared E2E framework (job submit → assert output) | `./mvnw -pl seatunnel-e2e -am verify` |
-| #22 | 9 Distribution | `seatunnel-dist`, Docker | `maven-assembly-plugin` / `maven-shade-plugin`, Docker | Distribution layout, Docker image, smoke test | `./mvnw -B -ntp verify` + image smoke test |
+| Planned | 7d JDBC | `connector-jdbc` (source + sink) | HikariCP, PostgreSQL/MySQL JDBC drivers, Testcontainers (exact versions/license review at implementation entry) | `JdbcSource`/`JdbcSink` | Testcontainers E2E (real Postgres/MySQL) |
+| Planned | 7e Kafka | `connector-kafka` (source + sink) | `org.apache.kafka:kafka-clients` (pin at implementation entry) | `KafkaSource`/`KafkaSink` | Testcontainers E2E (real Kafka) |
+| Planned | 7f File | `connector-file` (local FS) | `org.apache.hadoop:hadoop-client` (pin at slice start) | `FileSource`/`FileSink` (CSV/JSON/Parquet/ORC/Text) | E2E on local FS |
+| Planned | 7g Redis | `connector-redis` | `redis.clients:jedis` (pin at slice start) | `RedisSource`/`RedisSink` | Testcontainers E2E |
+| Planned | 7h MongoDB | `connector-mongodb` | `org.mongodb:mongodb-driver-sync` (pin at slice start) | `MongoSource`/`MongoSink` | Testcontainers E2E |
+| Planned | 7i HTTP | `connector-http` | `com.squareup.okhttp3:okhttp` (pin at slice start) | `HttpSource`/`HttpSink` | WireMock/Testcontainers E2E |
+| Planned | 7j CDC | `connector-cdc` (Debezium) | `io.debezium:debezium-api` + `debezium-embedded` (pin at slice start) | `CdcSource` (MySQL/Postgres) | Testcontainers E2E |
+| Planned | 7k Object storage | `connector-s3`, `connector-gcs`, `connector-azure` | AWS SDK v2 / Google Cloud Storage / Azure Storage (pin per PR) | Object-storage source/sink | LocalStack/Testcontainers E2E |
+| Planned | 8 E2E harness | `seatunnel-e2e` | `org.awaitility:awaitility` (pin at slice start) | Shared E2E framework (job submit → assert output) | `./mvnw -pl seatunnel-e2e -am verify` |
+| Planned | 9 Distribution | `seatunnel-dist`, Docker | `maven-assembly-plugin` / `maven-shade-plugin`, Docker | Distribution layout, Docker image, smoke test | `./mvnw -B -ntp verify` + image smoke test |
 
 ## Adopt-vs-build matrix (reuse-first)
 
@@ -225,3 +246,13 @@ found locally: bind pattern/escape as typed JDBC parameters instead of adding cu
 NULL/matching evaluation. [Specification/probe](SLICE-7A11.md).
 54 new assertions +201 regressions and eight actual LocalRunner SQL examples passed.
 New JUnit/packaged CLI/full Maven gates remain unrun; zero Actions, [skip ci] draft.
+
+
+### Remaining Stage7 — authorized full scope, planning checkpoint
+
+PR21 /7a11 explicitly merged. User selected all remaining Stage7, not merely remaining
+SQL functions. [Completion program](STAGE-7-COMPLETION.md) defines the complete mandatory
+matrix, runtime blockers, dependency/license adoption and verification criteria.
+No empty connector stubs or falsely green mock E2E. This planning change implements no
+new connector or advanced transform. Next implementation starts with7b prerequisites/
+contracts, then cohesive connector PRs, JDBC first. Optional translation stays deferred.
