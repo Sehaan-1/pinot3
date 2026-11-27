@@ -212,3 +212,16 @@ Reject subqueries/tuples/decorations, count list/sign nodes, normalize lexer err
 [Specification](SLICE-7A10.md). 47 new assertions +154 regressions and seven actual
 LocalRunner SQL examples passed. New JUnit/packaged CLI/full Maven gates remain unrun.
 Zero Actions, [skip ci] draft; no automatic merge or broader SQL scope authorization.
+
+
+### Slice 7a11: bounded LIKE / NOT LIKE / ESCAPE
+
+PR20 /7a10 already merged explicitly. 7a11 adds standard LIKE on STRING scalars with
+bounded literal/NULL patterns and optional one-character ESCAPE. Existing JSqlParser/
+HSQLDB own syntax/evaluation; no new library/plugin/API/core/engine coupling. Reject
+regex dialects, dynamic patterns, oversized/prefixed literals and invalid escapes.
+A pinned-source HSQLDB nullable-derived-row constant-pattern optimization quirk was
+found locally: bind pattern/escape as typed JDBC parameters instead of adding custom
+NULL/matching evaluation. [Specification/probe](SLICE-7A11.md).
+54 new assertions +201 regressions and eight actual LocalRunner SQL examples passed.
+New JUnit/packaged CLI/full Maven gates remain unrun; zero Actions, [skip ci] draft.

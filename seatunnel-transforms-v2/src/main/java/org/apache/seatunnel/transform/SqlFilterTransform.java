@@ -31,7 +31,8 @@ public final class SqlFilterTransform implements SeaTunnelTransform {
 
   public SqlFilterTransform(CatalogTable input, String condition) {
     this.input = Objects.requireNonNull(input, "input");
-    query = new SqlRowQuery(input, SqlFilterPlan.compile(input, condition));
+    var plan = SqlFilterPlan.compile(input, condition);
+    query = new SqlRowQuery(input, plan.sql(), plan.parameters());
   }
 
   public CatalogTable producedTable() {

@@ -30,8 +30,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a7 | Bounded SQL integer expressions | Merged by request; supplemental checks only |
 | 7a8 | Signed integer literals for sql-long | Merged by request; supplemental checks only |
 | 7a9 | Plain string and NULL literals for sql-string | Merged by request; supplemental checks only |
-| 7a10 | Bounded SQL IN and BETWEEN filters | Draft; supplemental checks only |
-| 7a11+ | Advanced transforms, broader expressions, connectors | ⬜ |
+| 7a10 | Bounded SQL IN and BETWEEN filters | Merged by request; supplemental checks only |
+| 7a11 | Bounded SQL LIKE and ESCAPE filters | Draft; supplemental checks only |
+| 7a12+ | Advanced transforms, broader expressions, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -339,3 +340,27 @@ bounds apply, with list containers/items counted. [Contracts](docs/SLICE-7A10.md
 
 Local parser/JDBC checks and seven actual LocalRunner SQL examples passed. New JUnit,
 packaged CLI and full-reactor verification remain unrun. No Actions started.
+
+## SQL LIKE filters (Slice 7a11)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-like-console.conf --mode local
+```
+
+`sql-filter` supports `name LIKE 'row-%'`, `NOT LIKE`, and optional one-character
+`ESCAPE`, e.g. `name LIKE '100!%' ESCAPE '!'` to match a literal percent sign.
+SQL `%` and `_` wildcards, case/collation and NULL behavior belong to HSQLDB. NULL
+sources/patterns are UNKNOWN, including `name NOT LIKE '%'`, so the row is dropped.
+The example emits `[10,"row-10"]` and `[12,"row-12"]`.
+
+Patterns must be plain config string literals of at most1024 decoded UTF-16 units
+(or NULL), never field-supplied expressions. ESCAPE must be a plain literal with one
+non-surrogate UTF-16 character. Standard doubled apostrophes and ordinary backslashes
+are supported; prefixed strings, ILIKE/RLIKE/REGEXP/LIKE BINARY reject. Pattern syntax
+errors are left to SQL preparation/evaluation, not a homemade matcher. Patterns and
+escapes are JDBC-bound after row values: this also avoids an HSQLDB inline-constant
+optimization quirk that otherwise breaks NULL negation on the derived row query.
+See [contracts and probe](docs/SLICE-7A11.md).
+
+Local parser/JDBC assertions and eight real LocalRunner examples passed; new Maven/
+JUnit, packaged CLI and full reactor verification remain unrun. No Actions started.

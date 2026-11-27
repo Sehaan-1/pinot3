@@ -17,7 +17,7 @@ PR checks only (no duplicate main push check); each job is capped at five minute
 This ledger is an operational policy, not an account-wide GitHub billing limiter:
 other branches/manual runs also consume minutes and must be accounted for before use.
 
-## Current handoff (Slice 7a10)
+## Current handoff (Slice 7a11)
 
 Three jobs since the user's authorization: 13s + 2m23s + 5m13s = **7m49s observed**,
 not a billing statement. All **15 conservative reservation minutes are allocated**;
@@ -151,3 +151,9 @@ PR19 /Slice7a9 explicitly merged on request. Slice7a10 starts zero Actions and u
 [skip ci] draft. Reserved25m/observed14m45s stay unchanged under spent one-time grants;
 not billing evidence, fresh allowance or reclaimable CI time. Prior032f66f green result
 does not verify subsequent7a7–7a10 changes. No automatic rerun/dispatch/merge.
+
+
+PR20 /Slice7a10 explicitly merged on request. Slice7a11 starts zero Actions and uses
+[skip ci] draft. Reserved25m/observed14m45s unchanged; spent one-time grants confer no
+further workflow-dispatch/rerun permission or fresh allowance. Prior032f66f successful
+run doesn't verify subsequent7a7–7a11 changes. No automatic merge.
