@@ -20,7 +20,7 @@ import java.sql.*;
 import org.apache.seatunnel.api.table.CatalogTable.Column;
 import org.apache.seatunnel.api.table.CatalogTable.DataType;
 
-/** Strict scalar mapping; JDBC/pgjdbc owns the codecs. */
+/** Strict scalar mapping; JDBC/the selected driver owns the codecs. */
 final class JdbcTypes {
   private JdbcTypes() {}
 
@@ -48,6 +48,14 @@ final class JdbcTypes {
               || (col.type() == DataType.BOOLEAN
                   && actual == Types.BIT
                   && "bool".equalsIgnoreCase(metadata.getColumnTypeName(i + 1)));
+      if (config.dialect == JdbcDialect.MYSQL) {
+        // Connector/J BOOLEAN aliases use TINYINT, not a portable boolean carrier.
+        if (col.type() == DataType.BOOLEAN)
+          compatible = actual == Types.BIT && metadata.getPrecision(i + 1) == 1;
+        if (col.type() == DataType.INT
+            || col.type() == DataType.LONG
+            || col.type() == DataType.DOUBLE) compatible = compatible && metadata.isSigned(i + 1);
+      }
       if (!compatible || !col.name().equals(metadata.getColumnLabel(i + 1)))
         throw new SQLException("JDBC schema mismatch");
     }

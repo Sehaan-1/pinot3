@@ -36,7 +36,8 @@ class SeaTunnelCommandTest {
   void discoversFactoriesAndRunsRealOperatorsWithoutClosingTheClasspath() throws Exception {
     ClassLoader previous = Thread.currentThread().getContextClassLoader();
     try (var discovery = PluginDiscovery.fromClasspath(SourcePlugin.class)) {
-      assertThat(discovery.identifiers()).containsExactlyInAnyOrder("fake", "jdbc-postgres");
+      assertThat(discovery.identifiers())
+          .containsExactlyInAnyOrder("fake", "jdbc-postgres", "jdbc-mysql");
     }
     StringWriter output = new StringWriter();
     long count =
