@@ -188,4 +188,25 @@ class PipelineIT {
     assertThat(result.output()).isEmpty();
     assertThat(result.errors()).contains("STRING type");
   }
+
+  @Test
+  void packagedPipelineExtractsJsonUsingInstalledProvider() throws Exception {
+    Result result = run(Files.readString(Path.of("..", "examples", "fake-json-path-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    var row = new com.fasterxml.jackson.databind.ObjectMapper().readTree(result.output().trim());
+    assertThat(row.size()).isEqualTo(3);
+    assertThat(row.get(0).asLong()).isEqualTo(10L);
+    assertThat(row.get(2).asText()).isEqualTo("Ada");
+  }
+
+  @Test
+  void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
+    Result result =
+        run(
+            "source { plugin=fake, options.rows=1 }\nsink.plugin=console\n"
+                + "transforms=[{plugin=json-path,options={field=name,path=\"$.missing\",target=extracted}}]");
+    assertThat(result.code()).isEqualTo(1);
+    assertThat(result.output()).isEmpty();
+    assertThat(result.errors()).contains("Invalid JSON input");
+  }
 }
