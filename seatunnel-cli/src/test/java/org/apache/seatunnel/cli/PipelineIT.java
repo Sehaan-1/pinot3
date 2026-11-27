@@ -195,6 +195,9 @@ class PipelineIT {
   void packagedPipelineExtractsJsonUsingInstalledProvider() throws Exception {
     Result result = run(Files.readString(Path.of("..", "examples", "fake-json-path-console.conf")));
     assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .as("JSON-only stdout: %s", result.output())
+        .hasSize(1);
     var row = new com.fasterxml.jackson.databind.ObjectMapper().readTree(result.output().trim());
     assertThat(row.size()).isEqualTo(3);
     assertThat(row.get(0).asLong()).isEqualTo(10L);

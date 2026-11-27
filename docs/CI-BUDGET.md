@@ -56,3 +56,61 @@ PR #14 / Slice 7a5 explicitly merged on request. Its override was not blanket me
 permission. Slice 7a6 launches zero Actions and uses a [skip ci] draft head. The
 15-minute conservative reservation remains fully allocated; prior observed 7m49s
 is unchanged, not billing evidence or reclaimable CI time. Maven gates stay pending.
+
+
+## One-time verification authorization after Slice 7a6
+
+The user explicitly authorized Actions "just for this once" to execute the previously
+unrun tests. Reserve **one additional job, maximum 5 runner minutes**, for a single
+PR-triggered verification of merged slices through 7a6. Conservative reservations
+now total **20 minutes**; this is a scoped exception to the prior exhausted 15-minute
+ledger, not recurring permission. Do not rerun or dispatch another job automatically.
+Existing observed 7m49s remains historical; append this run's actual outcome separately.
+
+Use one `./mvnw -B -ntp verify` reactor invocation (JUnit, packaged CLI Failsafe E2E,
+Spotless, license and dependency convergence), replacing repeated overlapping builds
+that previously exhausted the timeout. Existing PR-only triggers and five-minute cap
+remain unchanged; no push/main/scheduled/manual trigger is enabled. Open a verification
+PR without [skip ci] exactly once, then use [skip ci] for any follow-up record/fixes.
+This is verification-only, not authorization to merge that PR or begin another slice.
+
+
+### One-time run outcome — no rerun
+
+- PR #16, tested head `dd9c816`, run **46031639568**:
+  https://github.com/Sehaan-1/pinot3/actions/runs/46031639568
+- Job ran 2026-11-27T16:12:43Z–16:16:38Z: **3m55s observed**, conclusion
+  **failure**, not timeout. The single five-minute reservation is consumed; no
+  reclaim/rerun. Historical plus this run = **11m44s observed**, not billing evidence;
+  conservative reservations remain **20 minutes total**.
+- Reactor reached CLI Failsafe. Reported CLI integration aggregate: 16 tests,
+  zero assertion failures, one error, zero skipped. PipelineIT: 15 tests, one error.
+  Error: `packagedPipelineExtractsJsonUsingInstalledProvider`, line198,
+  Jackson JsonParseException: unexpected ':' (code58), expected space separating
+  root-level values while parsing CLI stdout. Process exit code assertion had passed.
+  Do not claim full reactor success. Earlier reactor stages did not block CLI verify;
+  full individual suite counts are not available from annotations.
+- Failure annotation obtained via Checks API. Raw log and report artifact download
+  redirects are blocked by sandbox egress; exact stdout and complete reports have
+  not been inspected. Default Logback console output is a possible cause (only a
+  test logging config exists), but this is not yet a confirmed root cause.
+- No automatic fixes/rerun/merge. Existing PR-only triggers unchanged; this follow-up
+  record uses [skip ci]. More Actions require another explicit user authorization.
+
+## Second explicit one-time authorization: fix and verification
+
+The user authorized one further Actions run to resolve the JSON-path CLI failure.
+Reserve one additional five-minute job; conservative reservations now total **25
+minutes**, exceeding the original ceiling only under this new explicit scoped
+permission. No automatic rerun or future budget is implied. The previous 11m44s
+observed runtime remains historical, not billed time or reclaimable reservation.
+
+Fix plan: ship CLI-owned Logback defaults with INFO root and explicit stderr target.
+Pinned Logback1.5.6 source shows default DEBUG root and BasicConfigurator console
+appender defaulting to stdout; Jayway2.9.0 CompiledPath logs DEBUG on evaluation.
+No production logback.xml existed. That combination contaminates JSON stdout with a
+clock timestamp, consistent with the previous unexpected-colon parsing error.
+Do not filter log lines out in tests or suppress parse failures. Retain JSON E2E
+assertions and add a packaged-JAR subprocess regression proving warnings go to stderr
+while stdout remains exact JSON. One non-skip commit triggers the single run on PR16;
+any post-run documentation/fixes use [skip ci]. Do not merge automatically.
