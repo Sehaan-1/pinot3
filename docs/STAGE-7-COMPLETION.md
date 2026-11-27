@@ -65,7 +65,7 @@ verification evidence, not merely an opened PR or a library dependency in a POM.
 |---|---|---|---|
 | [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | 7b1 native row-kind/extractor and7b2 exact-token filter are implemented with local supplemental checks. Maven/JUnit/packaged CLI gates remain unrun; do not check off this bundle until verified. All named unary 7b implementations are present; verification remains incomplete. |
 | [ ] | Multi-input prerequisite + TableMerge | Existing DAG/task/transport primitives; library serialization; no new scheduler in transforms | Slice7b3 implements bounded schema-aligned UNION ALL in core, serial inputs/shared chain and writer, preflight validation, backpressure/end-of-input/failure cleanup. 207 local contracts + real multi-source E2E passed; Maven/JUnit/installed CLI/full reactor unrun. No streaming or distributed merge claim. |
-| [ ] |7d JDBC PostgreSQL source + sink | HikariCP + pgjdbc (Apache-2.0 / BSD-style); JDBC prepared statements | Bounded partitioned read, explicit schema, typed binding, cursor/resource ownership, batch flush/rollback/restore contracts, no false exactly-once claim. Real PostgreSQL round-trip and failure tests. JDBC specification required at implementation entry. |
+| [ ] |7d JDBC PostgreSQL source + sink | HikariCP + pgjdbc (Apache-2.0 / BSD-style); JDBC prepared statements | Slice7d1 implements bounded range partitions, explicit schema/typed bindings, Hikari ownership, batch commit/rollback and explicit unsupported restore. Spec and gated real PostgreSQL/CLI tests added.195 proxy checks + HSQLDB exercise passed; actual PostgreSQL/Hikari/pgjdbc/Maven/CLI gates UNRUN, so not complete. |
 | [ ] |7d MySQL adapter and driver decision | JDBC/HikariCP reuse; driver license/distribution review first | Real MySQL round-trip/schema/type/quoting/NULL tests. pgjdbc/HSQLDB evidence does not count. Driver must be reproducibly loadable in installed CLI. |
 | [ ] | Streaming/checkpoint runtime prerequisite | Existing engine/transport/state primitives, no connector-owned coordinator | Unbounded poll/cancellation/backpressure, checkpoint->source offset/sink flush ordering, close/restart/restore tests with real adapters. No generic exactly-once promise without corresponding external protocol. |
 | [ ] |7e Kafka source + sink | Apache Kafka clients (Apache-2.0); Testcontainers Kafka | Partition assignment, offset snapshots/restore, key/value/schema format, bounded offset mode and live mode separately, delivery/retry/transaction claims explicit. Real broker E2E, restart/offset recovery and failure cleanup. |
@@ -93,10 +93,9 @@ change-metadata contracts. Independent connectors still remain separate PRs.
   explicitly before adding either dependency or claiming MySQL complete.
 - Testcontainers/JUnit/AssertJ remain test-only. Docker/container images must be pinned
   and failure diagnostics collected. No tests auto-start Actions or download secrets.
-- HikariCP7.1.0 and pgjdbc42.7.15 tagged upstream sources were inspected as current
-  JDBC candidates, **not adopted yet**. Hikari7.1.0 targets Java11 and requests
-  SLF4J2.0.17; this repo currently pins2.0.16. Resolve compatibility/convergence in
-  the JDBC implementation PR, rather than blindly copy the old roadmap5.1.0 pin.
+- Slice7d1 adopts HikariCP7.1.0 and pgjdbc42.7.15 after tagged source/license/API
+  review. Hikari targets Java11; root SLF4J aligned to2.0.17. pgjdbc checker-qual
+  aligned with Guava at3.55.1. Actual Maven convergence remains unrun.
 - Never implement a wire protocol, HTTP retry engine, CSV/Parquet/ORC codec, binlog
   reader, cloud signer or database pool where the adopted library already owns it.
 
@@ -140,6 +139,8 @@ merged and has its required verification evidence, with all delivery guarantees
 accurate and all known blockers resolved. Optional7c is listed as deferred, not done.
 There is no Stage7 completion claim in this planning PR. Current production progress:7b1 native row-kind carrier/extractor/preservation and
 7b2 literal-token filtering and7b3 bounded multi-input TableMerge, with supplemental
-local checks only. All named7b implementations are present; gates remain unrun. Next:
-JDBC (first connector); streaming runtime prerequisites precede unbounded connectors. No
+local checks only. All named7b implementations are present; gates remain unrun.
+Slice7d1 PostgreSQL source/sink is implemented but actual PostgreSQL/Hikari/pgjdbc and
+Maven/installed CLI gates remain unrun. Next: JDBC verification/MySQL driver decision;
+streaming runtime prerequisites precede unbounded connectors. No
 mandatory row above is fully complete/verified yet.

@@ -23,6 +23,8 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+    <!-- Pool diagnostics can include driver exceptions/row values; adapter emits redacted failures. -->
+    <logger name="com.zaxxer.hikari" level="OFF"/>
     <root level="INFO">
         <appender-ref ref="STDERR"/>
     </root>

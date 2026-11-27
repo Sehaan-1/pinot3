@@ -185,3 +185,12 @@ not Actions or connector merges. Zero Actions, [skip ci]; reserved25m/observed14
 unchanged. 207 offline executable contracts,423 regressions and eleven real LocalRunner pipelines
 passed using prior supplemental dependencies. JUnit/packaged CLI/affected Maven/full
 reactor gates remain unrun;7b is implemented, not fully verified.
+
+
+Slice7d1: latest "next then merge" authorizes one next PostgreSQL JDBC PR merge despite
+disclosed verification gaps. Zero Actions, [skip ci]; reserved25m/observed14m45s unchanged.
+195 proxy/config assertions, real HSQLDB JDBC exercise, resource-free discovery/examples,
+630 regressions and11 actual prior pipelines passed. Offline session copy disables
+production pool-open for injected JDBC tests; not Hikari/pgjdbc/PostgreSQL evidence.
+Gated real PostgreSQL/packaged CLI tests added but UNRUN, as are affected Maven/JUnit/
+convergence/full reactor. No connector row checked off; no future merge/CI grant.

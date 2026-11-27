@@ -71,7 +71,7 @@ PR #1  Scaffold (root POM, wrapper, CI)
 | #21 | 7a11 LIKE/ESCAPE | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bound literal patterns, engine NULL semantics | Merged explicitly; local checks, new Maven gates unrun |
 | #23–#25 | 7b advanced transforms + multi-input | API, transforms, core, CLI | Existing Guava/JDK/SPI | RowKindExtractor, FilterToken, bounded TableMerge UNION ALL | Implemented with supplemental checks; Maven/JUnit/installed CLI gates unrun |
 | Optional | 7c Translation | `seatunnel-translation-flink`, `seatunnel-translation-spark` | Flink 1.19 / Spark 3.5 (pin at slice start) — **OPTIONAL** | Translation layer (only if Spark/Flink interop is in scope) | Deferred until scope is confirmed |
-| Planned | 7d JDBC | `connector-jdbc` (source + sink) | HikariCP, PostgreSQL/MySQL JDBC drivers, Testcontainers (exact versions/license review at implementation entry) | `JdbcSource`/`JdbcSink` | Testcontainers E2E (real Postgres/MySQL) |
+| In progress | 7d JDBC | `connector-jdbc` (source + sink) | HikariCP, PostgreSQL/MySQL JDBC drivers, Testcontainers (exact versions/license review at implementation entry) | `JdbcSource`/`JdbcSink` | Testcontainers E2E (real Postgres/MySQL) |
 | Planned | 7e Kafka | `connector-kafka` (source + sink) | `org.apache.kafka:kafka-clients` (pin at implementation entry) | `KafkaSource`/`KafkaSink` | Testcontainers E2E (real Kafka) |
 | Planned | 7f File | `connector-file` (local FS) | `org.apache.hadoop:hadoop-client` (pin at slice start) | `FileSource`/`FileSink` (CSV/JSON/Parquet/ORC/Text) | E2E on local FS |
 | Planned | 7g Redis | `connector-redis` | `redis.clients:jedis` (pin at slice start) | `RedisSource`/`RedisSink` | Testcontainers E2E |
@@ -297,3 +297,21 @@ installed CLI tests and Maven/full reactor gates remain unrun. Zero Actions. All
 7b features implemented, not fully verified. Next is JDBC; streaming prerequisites
 still required before unbounded connectors. This merge authorization covers 7b, not
 new CI spend or connector merges.
+
+
+### Slice7d1: bounded PostgreSQL JDBC source/sink
+
+[Specification](SLICE-7D1.md) written before implementation. Adopt HikariCP7.1.0
+(Apache-2.0) and pgjdbc42.7.15 (PostgreSQL BSD-style); align SLF4J2.0.17 and transitive
+checker-qual3.55.1. GitHub tagged POM/build/license review and exact-version advisory
+queries performed (no advisory entries returned; not a full security audit).
+Strict options/quoted identifiers/typed schema; bounded cursor/range partition source,
+INSERT-only batch commits, rollback/close cleanup, explicit no restore/retry/exactly-once.
+Installed CLI dependency/providers/examples and gated PostgreSQL/CLI round-trip tests.
+195 local proxy/config checks, real HSQLDB JDBC exercise, resource-free discovery,
+630 regressions and11 actual LocalRunner examples passed. Offline session copy bypassed
+pool-open (not production changes); Hikari/pgjdbc/real PostgreSQL/JUnit/Maven/packaged CLI/
+convergence/full reactor remain UNRUN. No Actions. Latest next-then-merge authorizes
+this single PostgreSQL adapter PR merge with gaps, not new CI or later connectors.
+Next: JDBC verification and explicit MySQL driver license/packaging decision, then
+streaming prerequisites/remaining connectors. PostgreSQL/JDBC row remains unchecked.

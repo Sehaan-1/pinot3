@@ -62,6 +62,7 @@
         <module>seatunnel-core</module>
         <module>connector-fake</module>
         <module>connector-console</module>
+        <module>connector-jdbc</module>
         <module>seatunnel-cli</module>
         <module>seatunnel-engine</module>
         <module>seatunnel-transforms-v2</module>
@@ -96,11 +97,14 @@
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-io.version>2.16.1</commons-io.version>
-        <slf4j.version>2.0.16</slf4j.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.6</logback.version>
         <typesafe-config.version>1.4.3</typesafe-config.version>
         <jsqlparser.version>4.9</jsqlparser.version>
         <hsqldb.version>2.7.4</hsqldb.version>
+        <hikari.version>7.1.0</hikari.version>
+        <postgresql.version>42.7.15</postgresql.version>
+        <checker-qual.version>3.55.1</checker-qual.version>
         <jsonpath.version>2.9.0</jsonpath.version>
         <json-smart.version>2.5.2</json-smart.version>
         <jackson.version>2.17.1</jackson.version>
@@ -130,6 +134,22 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${hikari.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+            <!-- Align pgjdbc and Guava annotation transitive dependency. -->
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>${checker-qual.version}</version>
+            </dependency>
             <!-- Align CSV and Avro/compress transitive codec versions. -->
             <dependency>
                 <groupId>commons-codec</groupId>
