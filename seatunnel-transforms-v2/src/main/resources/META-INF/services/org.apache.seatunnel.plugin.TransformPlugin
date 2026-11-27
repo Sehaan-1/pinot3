@@ -8,3 +8,4 @@ org.apache.seatunnel.transform.SqlProjectPlugin
 org.apache.seatunnel.transform.SqlStringPlugin
 org.apache.seatunnel.transform.SqlLongPlugin
 org.apache.seatunnel.transform.RowKindExtractorPlugin
+org.apache.seatunnel.transform.FilterTokenPlugin

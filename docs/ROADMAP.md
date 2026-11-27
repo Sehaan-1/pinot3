@@ -269,3 +269,17 @@ inference. [Specification](SLICE-7B1.md). No new dependency/API engine coupling.
 examples passed; JUnit/Maven/packaged CLI remain unrun. Zero Actions. User explicitly
 authorized merge22, next implementation, then merge that next PR; exception applies
 only to this deliverable. Remaining advanced transforms/connectors still outstanding.
+
+
+### Slice7b2: exact token filtering
+
+PR23 /7b1 merged explicitly. filter-token adopts centrally pinned Guava33.2.1-jre
+Splitter with literal delimiters and explicit ANY/ALL set membership; no custom token
+parser/regex engine. Schema/original-row identity and all native kinds preserved. Strict
+options/bounds/null/lifecycle contracts; lazy iteration, bounded match set, no split array.
+[Specification](SLICE-7B2.md). Direct Guava dependency in transforms-v2 uses existing
+central version; no new root pin/API/core/engine coupling.
+43 supplemental token assertions +380 regressions and ten actual LocalRunner examples
+passed. Guava/Jackson temporary import relinks are not pinned Maven proof. Added JUnit/
+packaged CLI/full reactor remain unrun. Zero Actions; user explicitly authorized next
+implementation then merge for this PR only. TableMerge/runtime/connectors remain pending.

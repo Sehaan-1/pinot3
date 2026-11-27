@@ -291,6 +291,15 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineFiltersExactTokens() throws Exception {
+    Result result =
+        run(Files.readString(Path.of("..", "examples", "fake-filter-token-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[10,\"row-10\"]", "[12,\"row-12\"]");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(
