@@ -204,3 +204,12 @@ Offline session copy bypasses Hikari open; no actual MySQL/ConnectorJ/Hikari/Mav
 installed CLI/artifact-exclusion/convergence/full reactor evidence. Test profile is
 explicit/test-only; driver licensing and real service provision remain operator-owned.
 No connector completion checkmark or future CI/merge authorization.
+
+
+Slice7e0: next-then-merge permits this single streaming/checkpoint bridge PR merge with
+disclosed gaps. Zero Actions, [skip ci], reserved25m/observed14m45s unchanged.310 local
+protocol assertions,927 regressions andreal Fake/Console restore scenarios plus11 old example executions passed.
+Production bridge/coordinator/record/repository subset compiled without substitutions;
+local test repository only, not production replication/external service proof. New
+Hazelcast/JUnit/affected Maven/store build/installed CLI/full reactor UNRUN. No remaining
+CI grant inferred; Stage7 streaming/JDBC acceptance stays unchecked.

@@ -333,3 +333,25 @@ Actual MySQL/official driver/Hikari/JUnit/CLI/artifact exclusion/convergence/ful
 are UNRUN. Latest next-then-merge permits this single PR merge, not Actions or future
 connector merges. JDBC remains unchecked. Next: streaming/checkpoint runtime prerequisites
 with JDBC/7b acceptance gaps carried forward; Stage7 not complete.
+
+
+### Slice7e0: cooperative streaming/checkpoint bridge
+
+[Specification](SLICE-7E0.md) first; [entry/fault model](STREAMING-RUNTIME.md).
+Reuse CheckpointCoordinator/records/Hazelcast store and API operators; introduce engine-
+only repository abstraction and single-reader programmatic pump. No new production
+library/scheduler/serializer or API engine imports. Coordinated sink-first prepare,
+source-last completion, recover external commits before reader/writer creation, restore
+state before polling, and completed-terminal restart. requireCheckpoint refuses missing
+restart state. Clarify prepared-handle ownership in SinkWriter docs. Fake/Console added
+as TEST dependencies only. Existing CheckpointStore constructor callers remain source-
+compatible after Coordinator widens to repository; compiled clients require rebuild.
+310 local executable checks +927 regressions andreal Fake/Console restore scenarios plus11 old example executions
+passed (terminal and mid-input bridge restore;11 prior LocalRunner). JDK17 compiled real bridge/coordinator/
+repository/records without replacements. Test-only serialized repo is not production
+replication or external transactional proof; existing shaded format dependencies used
+for Fake/Console. Added JUnit/Hazelcast IT, store implementation build, affected Maven/
+installed CLI/full reactor remain UNRUN. Zero Actions. This user instruction permits
+this single next PR merge, not future merges or CI. Stream acceptance incomplete;
+no automatic fencing/HA/CLI streaming/parallel topology/exactly-once claim. Next: Kafka
+integration, with actual runtime/JDBC/service gates carried forward.

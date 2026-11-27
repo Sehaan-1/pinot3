@@ -36,8 +36,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7b2 | Exact token filters (ANY/ALL) | Merged by request; Maven gates unrun |
 | 7b3 | Bounded multi-input TableMerge | Merged by request; Maven gates unrun |
 | 7d1 | PostgreSQL JDBC source + sink | Merged by request; service/Maven gates unrun |
-| 7d2 | MySQL JDBC adapter, operator-owned driver | Implemented; MySQL/driver/Maven gates unrun |
-| 7e–7k | Other connectors and streaming prerequisites | Scope authorized; implementation outstanding |
+| 7d2 | MySQL JDBC adapter, operator-owned driver | Merged by request; service/Maven gates unrun |
+| 7e0 | Single-reader streaming/checkpoint bridge | Implemented; real-store/Maven gates unrun |
+| 7e–7k | Remaining connectors/runtime acceptance | Scope authorized; outstanding |
 | 7c | Spark/Flink translation | Optional; deferred |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -542,3 +543,42 @@ engine check) remains uncompiled/unrun locally; temporary tests inject JDBC sess
 Actual MySQL/Connector/J/Hikari, gated JUnit/installed CLI roundtrips, default-artifact
 exclusion, dependency convergence and Maven/full reactor gates remain **UNRUN**. No
 Actions. JDBC completion remains unchecked; streaming runtime is the next prerequisite.
+
+
+## Programmatic streaming/checkpoint bridge (Slice 7e0)
+
+[Specification](docs/SLICE-7E0.md) · [Engine entry and operating constraints](docs/STREAMING-RUNTIME.md).
+`StreamingRunner` in the engine pumps a single source/reader0 into a single writer,
+with synchronous backpressure and cooperative interruption. It reuses the existing
+CheckpointCoordinator and Hazelcast-backed CheckpointStore via CheckpointRepository;
+no new scheduler, protocol, serializer or production dependency. API remains engine-free.
+
+Between polls, checkpoint ordering is sink flush/prepare/snapshot → enumerator and
+reader snapshots → COMMITTING decision → external sink commit → writer/enumerator/
+reader completion (source last) → COMPLETED. Pending decisions recover external commit
+before new operators open; source state is restored before further polling. A pending
+terminal decision still restores live operators to acknowledge completion before the
+store becomes COMPLETED. Already-completed terminal input doesn't reopen operators.
+
+Pipeline bindings carry explicit version identity/schema and state/handle class tokens.
+Use `Settings(..., requireCheckpoint=true)` for restart to refuse an absent checkpoint;
+false is only for initial start or an operator-approved reset. Sink prepared handles
+must remain independently recoverable across writer close, commit and notifications
+must be idempotent, and state snapshots must be detached. Nontransactional output may
+duplicate after failure. Uncertain publication is never blindly aborted or retried;
+external orphan transactions may require manual reconciliation.
+
+This is **not** CLI streaming, multi-input/parallel DAG execution, stateful transforms,
+automatic failover/fencing or generic exactly-once delivery. The existing CLI remains
+bounded. JDBC adapters still reject checkpoint/restore. CheckpointStore is replicated
+**in memory** under its configured cluster fault model, not disk-durable; one-member
+clusters have no spare backup and whole-cluster loss isn't recovered. Operators must
+ensure one exclusive live owner/key and preserve compatible bindings/classes.
+
+310 executable contracts plus real FakeSource/ConsoleSink terminal and mid-input
+restore scenarios passed;927 earlier assertions and11 prior LocalRunner examples also passed.
+The runtime/coordinator/repository abstraction compiled unchanged on JDK17 with no stubs.
+Real Hazelcast integration test, JUnit/Maven/installed CLI/full reactor remain **UNRUN**;
+the local test repository serializes state but is neither a production store nor proof
+of real external delivery. Existing adapter-format dependencies were temporary shaded/
+source-built copies. No Actions; streaming/JDBC acceptance rows remain unchecked.

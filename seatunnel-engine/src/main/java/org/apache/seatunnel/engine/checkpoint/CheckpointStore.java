@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /** In-memory replicated decisions; single healthy-cluster coordinator per job is required. */
-public final class CheckpointStore {
+public final class CheckpointStore implements CheckpointRepository {
   public static final String MAP_NAME = "seatunnel.checkpoints.v1";
   private final IMap<UUID, CheckpointRecord> records;
 
@@ -46,11 +46,11 @@ public final class CheckpointStore {
     return records.get(Objects.requireNonNull(jobId, "jobId"));
   }
 
-  boolean publish(UUID jobId, CheckpointRecord expected, CheckpointRecord decision) {
+  public boolean publish(UUID jobId, CheckpointRecord expected, CheckpointRecord decision) {
     return records.executeOnKey(jobId, new Transition(expected, decision));
   }
 
-  void complete(UUID jobId, CheckpointRecord decision) {
+  public void complete(UUID jobId, CheckpointRecord decision) {
     if (!records.executeOnKey(jobId, new Transition(decision, decision.completed()))) {
       CheckpointRecord current = get(jobId);
       if (current == null
