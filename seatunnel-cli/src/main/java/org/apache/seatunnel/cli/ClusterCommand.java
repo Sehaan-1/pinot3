@@ -33,9 +33,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
 
 /** HTTP-only client: no Hazelcast/engine dependency in the packaged CLI. Never retries POST. */
 @Command(

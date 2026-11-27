@@ -17,6 +17,7 @@
 package org.apache.seatunnel.cli;
 
 import static org.assertj.core.api.Assertions.*;
+
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
 

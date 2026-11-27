@@ -32,11 +32,11 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import org.apache.seatunnel.engine.submission.JobSubmissionService;
 import org.apache.seatunnel.engine.submission.SubmissionException;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 

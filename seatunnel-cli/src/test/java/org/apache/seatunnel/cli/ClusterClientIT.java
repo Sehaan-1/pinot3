@@ -17,6 +17,7 @@
 package org.apache.seatunnel.cli;
 
 import static org.assertj.core.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;

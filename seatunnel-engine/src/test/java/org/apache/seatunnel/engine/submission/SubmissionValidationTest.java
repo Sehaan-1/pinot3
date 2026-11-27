@@ -17,6 +17,7 @@
 package org.apache.seatunnel.engine.submission;
 
 import static org.assertj.core.api.Assertions.*;
+
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
