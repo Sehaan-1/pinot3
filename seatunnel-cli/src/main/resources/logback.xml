@@ -26,6 +26,9 @@
     <!-- Pool diagnostics can include driver exceptions/row values; adapter emits redacted failures. -->
     <logger name="com.zaxxer.hikari" level="OFF"/>
     <logger name="org.apache.kafka" level="OFF"/>
+    <logger name="org.apache.hadoop" level="OFF"/>
+    <logger name="org.apache.parquet" level="OFF"/>
+    <logger name="org.apache.orc" level="OFF"/>
     <root level="INFO">
         <appender-ref ref="STDERR"/>
     </root>

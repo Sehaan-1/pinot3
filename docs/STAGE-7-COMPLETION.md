@@ -159,3 +159,12 @@ ranges/offset restore, CLI wiring/examples and service/packaging tests implement
 108 deterministic port assertions and live serialized checkpoint bridge PASS. Production
 KafkaSdk/pinned dependencies/Maven/broker/packaged CLI gates uncompiled/unrun; no Actions.
 Kafka, streaming, Stage7 remain unchecked. See [Kafka guide](KAFKA.md).
+
+### Slice7f implementation (not complete format/build acceptance)
+
+Local file CSV/JSON/text/Parquet/ORC source and staged hard-link no-clobber sink implemented
+together, with strict path/schema/NULL/kind/lifecycle and unsupported restore contracts,
+CLI/examples and real temp-directory tests. Supplemental342 assertions CSV/JSON/text;
+452 with actual ORC on alternate library versions. Production Parquet path/pinned ORC/
+Maven/full reactor/installed CLI uncompiled/unrun; no all-five-format acceptance or new
+Actions. File and Stage7 remain unchecked. [Evidence and ownership limits](FILES.md).

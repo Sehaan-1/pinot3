@@ -72,8 +72,8 @@ PR #1  Scaffold (root POM, wrapper, CI)
 | #23–#25 | 7b advanced transforms + multi-input | API, transforms, core, CLI | Existing Guava/JDK/SPI | RowKindExtractor, FilterToken, bounded TableMerge UNION ALL | Implemented with supplemental checks; Maven/JUnit/installed CLI gates unrun |
 | Optional | 7c Translation | `seatunnel-translation-flink`, `seatunnel-translation-spark` | Flink 1.19 / Spark 3.5 (pin at slice start) — **OPTIONAL** | Translation layer (only if Spark/Flink interop is in scope) | Deferred until scope is confirmed |
 | In progress | 7d JDBC | `connector-jdbc` (source + sink) | HikariCP, PostgreSQL/MySQL JDBC drivers, Testcontainers (exact versions/license review at implementation entry) | `JdbcSource`/`JdbcSink` | Testcontainers E2E (real Postgres/MySQL) |
-| Planned | 7e Kafka | `connector-kafka` (source + sink) | `org.apache.kafka:kafka-clients` (pin at implementation entry) | `KafkaSource`/`KafkaSink` | Testcontainers E2E (real Kafka) |
-| Planned | 7f File | `connector-file` (local FS) | `org.apache.hadoop:hadoop-client` (pin at slice start) | `FileSource`/`FileSink` (CSV/JSON/Parquet/ORC/Text) | E2E on local FS |
+| Implemented; gates unrun | 7e Kafka | `connector-kafka` (source + sink) | `org.apache.kafka:kafka-clients` (pin at implementation entry) | `KafkaSource`/`KafkaSink` | Testcontainers E2E (real Kafka) |
+| Implemented; gates unrun | 7f File | `connector-file` (local FS) | `org.apache.hadoop:hadoop-client-api/runtime:3.4.3`, Parquet1.15.0, ORC2.3.1 | `FileSource`/`FileSink` (CSV/JSON/Parquet/ORC/Text) | E2E on local FS |
 | Planned | 7g Redis | `connector-redis` | `redis.clients:jedis` (pin at slice start) | `RedisSource`/`RedisSink` | Testcontainers E2E |
 | Planned | 7h MongoDB | `connector-mongodb` | `org.mongodb:mongodb-driver-sync` (pin at slice start) | `MongoSource`/`MongoSink` | Testcontainers E2E |
 | Planned | 7i HTTP | `connector-http` | `com.squareup.okhttp3:okhttp` (pin at slice start) | `HttpSource`/`HttpSink` | WireMock/Testcontainers E2E |
@@ -359,3 +359,8 @@ integration, with actual runtime/JDBC/service gates carried forward.
 Slice7e1 Kafka implementation is present (source/sink/security/offsets/recovery/CLI/test
 gates), but Kafka/streaming completion is NOT accepted: production SDK/Maven/broker and
 packaged gates remain unrun. [Contract and evidence](KAFKA.md).
+
+Slice7f file implementation is present: all five format adapters, bounded explicit-file
+source and staged no-clobber sink, CLI/examples/tests. Supplemental CSV/JSON/text/ORC
+checks passed on partly alternate dependencies; production Parquet/pinned libraries/
+Maven/packaged gates remain unrun. [Contract and evidence](FILES.md). File/Stage7 unchecked.

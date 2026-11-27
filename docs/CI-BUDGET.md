@@ -216,3 +216,7 @@ CI grant inferred; Stage7 streaming/JDBC acceptance stays unchecked.
 
 Slice7e1 Kafka: zero Actions; no further allowance granted. Local supplemental port tests
 only; SDK/Maven/broker/packaged gates remain unrun. See KAFKA.md.
+
+Slice7f files: zero Actions, no new allocation. Supplemental real local filesystem tests
+only (CSV/JSON/text + ORC on alternate dependencies). Parquet/pinned Maven/packaged/full
+reactor remain unrun; file/Stage7 acceptance unchecked. See FILES.md.
