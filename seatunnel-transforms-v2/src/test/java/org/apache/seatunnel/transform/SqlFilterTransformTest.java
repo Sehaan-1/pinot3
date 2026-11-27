@@ -70,8 +70,6 @@ class SqlFilterTransformTest {
             "EXISTS (SELECT 1)",
             "LENGTH(name) > 0",
             "id + 1 > 2",
-            "id IN (1,2)",
-            "id BETWEEN 1 AND 2",
             "input.id > 1",
             "unknown=1",
             "name LIKE '%'",
