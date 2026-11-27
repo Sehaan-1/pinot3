@@ -188,3 +188,15 @@ API/engine changes. [Specification](SLICE-7A8.md).
 30 literal checks +37 updated integer +59 string/filter regressions and five actual
 LocalRunner SQL examples passed. JUnit/CLI/full Maven gates remain unrun. Zero Actions,
 [skip ci] draft; no automatic merge or expanded SQL scope authorized.
+
+
+### Slice 7a9: standard string and SQL NULL literals
+
+PR18 /7a8 explicitly merged with local supplemental evidence only. 7a9 extends
+sql-string's existing allowlist with plain StringValue and NullValue nodes, using
+JSqlParser4.9 parsing/serialization and HSQLDB2.7.4 typed VARCHAR evaluation. Backslash
+escaping explicitly disabled; prefixes reject, lexer errors normalized before open.
+No new plugin/dependency/API/engine changes. [Specification](SLICE-7A9.md).
+30 literal assertions +124 regressions (57 string/filter,37 integer,30 integer literal)
+and six actual LocalRunner SQL examples passed. New JUnit/CLI/full Maven gates remain
+unrun. Zero Actions, [skip ci] draft; no automatic merge or expanded dialect permission.

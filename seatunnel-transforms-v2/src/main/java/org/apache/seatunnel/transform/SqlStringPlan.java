@@ -23,7 +23,10 @@ import java.util.stream.Collectors;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.parser.TokenMgrException;
 import net.sf.jsqlparser.schema.Column;
 import org.apache.seatunnel.api.table.CatalogTable;
 
@@ -42,9 +45,11 @@ final class SqlStringPlan {
     if (expression == null || expression.isBlank() || expression.length() > 4096)
       throw new IllegalArgumentException("Expected SQL string expression of 1..4096 characters");
     try {
-      Expression parsed = CCJSqlParserUtil.parseExpression(expression, false);
+      Expression parsed =
+          CCJSqlParserUtil.parseExpression(
+              expression, false, parser -> parser.withBackslashEscapeCharacter(false));
       return "SELECT " + new SqlStringPlan(input).render(parsed, 0) + " FROM " + source;
-    } catch (JSQLParserException invalid) {
+    } catch (JSQLParserException | TokenMgrException invalid) {
       throw new IllegalArgumentException("Invalid SQL string expression", invalid);
     }
   }
@@ -52,6 +57,14 @@ final class SqlStringPlan {
   private String render(Expression expression, int depth) {
     if (++nodes > 64 || depth > 16)
       throw new IllegalArgumentException("SQL string expression AST exceeds limits");
+    if (expression instanceof NullValue)
+      return "CAST(NULL AS VARCHAR(" + SqlRowQuery.MAX_STRING_CHARS + "))";
+    if (expression instanceof StringValue literal) {
+      if (literal.getPrefix() != null)
+        throw new IllegalArgumentException("Only plain SQL string literals are supported");
+      // JSqlParser preserves standard doubled-quote escaping. Do not hand-decode/requote SQL.
+      return "CAST(" + literal + " AS VARCHAR(" + SqlRowQuery.MAX_STRING_CHARS + "))";
+    }
     if (expression instanceof Column column) {
       if (column.getTable() != null
           || column.getArrayConstructor() != null

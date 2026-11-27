@@ -56,6 +56,48 @@ class SqlStringTransformTest {
   }
 
   @Test
+  void supportsPlainStringsDoubledQuotesUnicodeBackslashesAndSqlNull() throws Exception {
+    assertThat(evaluate("'Ada'", null, null)).isEqualTo("Ada");
+    assertThat(evaluate("'O''Reilly'", null, null)).isEqualTo("O'Reilly");
+    assertThat(evaluate("''''", null, null)).isEqualTo("'");
+    assertThat(evaluate("''", null, null)).isEqualTo("");
+    assertThat(evaluate("'नमस्ते'", null, null)).isEqualTo("नमस्ते");
+    assertThat(evaluate("'C:\\tmp\\n'", null, null)).isEqualTo("C:\\tmp\\n");
+    assertThat(evaluate("NULL", "a", null)).isNull();
+    assertThat(evaluate("COALESCE(name,'unknown')", null, null)).isEqualTo("unknown");
+    assertThat(evaluate("COALESCE(name,'unknown')", "Ada", null)).isEqualTo("Ada");
+    assertThat(evaluate("CONCAT('user-',name)", "Ada", null)).isEqualTo("user-Ada");
+    assertThat(evaluate("UPPER('Ada')", null, null)).isEqualTo("ADA");
+    assertThat(evaluate("COALESCE(NULL,NULL)", null, null)).isNull();
+    assertThat(evaluate("UPPER(NULL)", "x", null)).isNull();
+    assertThat(evaluate("'x''; DROP TABLE t; --'", null, null)).isEqualTo("x'; DROP TABLE t; --");
+  }
+
+  @Test
+  void rejectsPrefixedNonStringAndMalformedLiteralsBeforeOpening() {
+    for (String expression :
+        List.of(
+            "N'x'",
+            "E'x'",
+            "U'x'",
+            "R'x'",
+            "B'10'",
+            "RB'x'",
+            "_utf8'x'",
+            "q'[x]'",
+            "$$x$$",
+            "1",
+            "TRUE",
+            "DATE '2020-01-01'",
+            "?",
+            "'x';SELECT name",
+            "'unclosed"))
+      assertThatThrownBy(() -> new SqlStringTransform(table(), expression, "out"))
+          .as(expression)
+          .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void rejectsUnsupportedSyntaxDecorationsAndBoundsBeforeOpening() {
     for (String expression :
         List.of(
@@ -71,8 +113,6 @@ class SqlStringTransformTest {
             "UPPER(name) OVER ()",
             "LENGTH(name)",
             "name || backup",
-            "'text'",
-            "NULL",
             "?",
             "CAST(name AS VARCHAR(5))",
             "SELECT name",

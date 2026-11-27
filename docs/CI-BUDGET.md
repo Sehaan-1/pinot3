@@ -17,7 +17,7 @@ PR checks only (no duplicate main push check); each job is capped at five minute
 This ledger is an operational policy, not an account-wide GitHub billing limiter:
 other branches/manual runs also consume minutes and must be accounted for before use.
 
-## Current handoff (Slice 7a8)
+## Current handoff (Slice 7a9)
 
 Three jobs since the user's authorization: 13s + 2m23s + 5m13s = **7m49s observed**,
 not a billing statement. All **15 conservative reservation minutes are allocated**;
@@ -139,3 +139,9 @@ launches zero Actions and uses [skip ci]. Historical observed14m45s / conservati
 reserved25m are unchanged and fully allocated under spent one-time authorizations.
 No automatic rerun/dispatch/merge or fresh-session allowance. PR16's successful run
 46033295536 at032f66f does not verify slices7a7/7a8.
+
+
+Slice7a8 /PR18 merged explicitly by user request without new Maven verification.
+Slice7a9 launches zero Actions, uses [skip ci], and stays draft. Reserved25m and
+observed14m45s remain unchanged, not reclaimed time or fresh authorization. Prior
+PR16 success covers its tested032f66f head only, not new slices7a7/7a8/7a9.
