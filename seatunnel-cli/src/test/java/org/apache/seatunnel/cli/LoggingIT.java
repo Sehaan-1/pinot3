@@ -53,6 +53,7 @@ class LoggingIT {
       assertThat(process.exitValue()).as(Files.readString(stderr)).isZero();
       assertThat(Files.readString(stdout)).isEqualTo("[1]\n");
       assertThat(Files.readString(stderr)).contains("CLI_LOGGING_REGRESSION_PROBE");
+      assertThat(Files.readString(stderr)).doesNotContain("JDBC_PRIVATE_DRIVER_DETAILS");
     } finally {
       if (process.isAlive()) process.destroyForcibly().waitFor();
     }
@@ -62,6 +63,8 @@ class LoggingIT {
   public static final class Probe {
     public static void main(String[] args) {
       LoggerFactory.getLogger(Probe.class).warn("CLI_LOGGING_REGRESSION_PROBE");
+      LoggerFactory.getLogger("com.zaxxer.hikari.pool.HikariPool")
+          .warn("JDBC_PRIVATE_DRIVER_DETAILS");
       System.out.print("[1]\n");
     }
   }

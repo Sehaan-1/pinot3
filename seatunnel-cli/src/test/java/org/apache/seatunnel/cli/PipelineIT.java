@@ -65,6 +65,58 @@ class PipelineIT {
   }
 
   @Test
+  @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(
+      named = "PINOT_PG_URL",
+      matches = ".+")
+  void packagedPostgresRoundTripUsesInstalledDriverAndProviders() throws Exception {
+    String schema = "test_cli_" + java.util.UUID.randomUUID().toString().replace("-", "");
+    var properties = new java.util.Properties();
+    properties.setProperty("user", System.getenv("PINOT_PG_USER"));
+    properties.setProperty("password", System.getenv("PINOT_PG_PASSWORD"));
+    properties.setProperty(
+        "sslmode", System.getenv().getOrDefault("PINOT_PG_SSL_MODE", "verify-full"));
+    properties.setProperty("connectTimeout", "5");
+    properties.setProperty("socketTimeout", "35");
+    String options =
+        "url=${PINOT_PG_URL}\nuser=${PINOT_PG_USER}\npassword=${PINOT_PG_PASSWORD}\n"
+            + "schema="
+            + schema
+            + "\ntable=events\nssl-mode="
+            + properties.getProperty("sslmode")
+            + "\n";
+    try (var connection =
+            java.sql.DriverManager.getConnection(System.getenv("PINOT_PG_URL"), properties);
+        var ddl = connection.createStatement()) {
+      ddl.execute("CREATE SCHEMA \"" + schema + "\"");
+      try {
+        ddl.execute(
+            "CREATE TABLE \"" + schema + "\".events (id BIGINT PRIMARY KEY, name TEXT NOT NULL)");
+        Result write =
+            run(
+                "source {plugin=fake,options={rows=3,start=10}}\n"
+                    + "sink {plugin=jdbc-postgres,options {\n"
+                    + options
+                    + "batch-size=2\n}} ");
+        assertThat(write.code()).as(write.errors()).isZero();
+        assertThat(write.output()).isEmpty();
+        Result read =
+            run(
+                "source {plugin=jdbc-postgres,options {\n"
+                    + options
+                    + "columns=[{name=id,type=LONG,nullable=false},{name=name,type=STRING,nullable=false}]\n"
+                    + "fetch-size=1\n"
+                    + "}}\n"
+                    + "sink.plugin=console");
+        assertThat(read.code()).as(read.errors()).isZero();
+        assertThat(read.output().lines().toList())
+            .containsExactlyInAnyOrder("[10,\"row-10\"]", "[11,\"row-11\"]", "[12,\"row-12\"]");
+      } finally {
+        ddl.execute("DROP SCHEMA \"" + schema + "\" CASCADE");
+      }
+    }
+  }
+
+  @Test
   void packagedPipelineMergesMultipleInputsBeforeSharedTransforms() throws Exception {
     Result result =
         run(

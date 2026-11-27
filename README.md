@@ -34,8 +34,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a11 | Bounded SQL LIKE and ESCAPE filters | Merged by request; supplemental checks only |
 | 7b1 | Native row kinds and metadata extractor | Merged by request; Maven gates unrun |
 | 7b2 | Exact token filters (ANY/ALL) | Merged by request; Maven gates unrun |
-| 7b3 | Bounded multi-input TableMerge | Implemented; local checks, Maven gates unrun |
-| 7d–7k | Connectors and streaming prerequisites | Scope authorized; implementation outstanding |
+| 7b3 | Bounded multi-input TableMerge | Merged by request; Maven gates unrun |
+| 7d1 | PostgreSQL JDBC source + sink | Implemented; real PostgreSQL/Maven gates unrun |
+| 7d remainder–7k | Other connectors and streaming prerequisites | Scope authorized; implementation outstanding |
 | 7c | Spark/Flink translation | Optional; deferred |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -455,3 +456,61 @@ TableMerge is a core topology operation, not a unary ServiceLoader transform.
 Added JUnit/packaged CLI tests, affected Maven and full reactor remain unrun. No Actions.
 7b RowKindExtractor, FilterToken and bounded TableMerge implementations are present;
 this does not claim fully verified 7b or completed Stage7 connectors.
+
+
+## PostgreSQL JDBC (Slice 7d1)
+
+[Specification](docs/SLICE-7D1.md) · [Postgres → Console](examples/postgres-to-console.conf)
+· [Fake → Postgres](examples/fake-to-postgres.conf).
+`connector-jdbc` installs source and sink `jdbc-postgres` in the CLI. HikariCP7.1.0 owns
+pooling; pgjdbc42.7.15 owns protocol/cursor/typed codecs. SLF4J is aligned to2.0.17 and
+checker-qual3.55.1 aligns pgjdbc/Guava annotations. MySQL is **not** implemented here.
+
+Both endpoints require `url`, `user`, `password`, `schema`, `table`. URL must be
+`jdbc:postgresql://host[:port]/database` with a simple database name and no query,
+fragment or userinfo. Keep credentials in environment-resolved HOCON, not tracked files.
+SQL identifiers are conservative ASCII names, quoted separately (no arbitrary SQL).
+Tables must already exist. `ssl-mode` defaults to `verify-full`; `require` and `disable`
+are explicit opt-ins, not automatic TLS downgrades. Configure CA trust via pgjdbc/JVM.
+
+Source requires `columns=[{name=id,type=LONG,nullable=false}, ...]` (1..128 entries).
+Supported types: BOOLEAN/Boolean, INT/Integer, LONG/Long, DOUBLE/Double, STRING/String.
+No implicit Java numeric/string coercion; nullable fields yield null. Source validates
+JDBC metadata and actual NULL values. Sink derives columns from its incoming schema
+and supports INSERT only; DELETE and update images fail rather than becoming inserts.
+
+- Source: `fetch-size`1..10000 (default500). Optional `partition-column`, `lower-bound`,
+  `upper-bound`, `partitions` must be supplied together. INT/LONG key only;2..32
+  disjoint half-open ranges cover **only** `[lower-bound,upper-bound)` and exclude
+  NULL keys. No range options means scan the entire table, including NULL keys.
+  No row ordering guarantee. Baseline enumerator supports one reader with sequential
+  splits and one read-only REPEATABLE_READ transaction, not a global parallel snapshot.
+- Sink: `batch-size`1..1000 (default100). Executes and commits each full batch; final
+  flush commits the remainder. Failure/close rolls back pending work; close never
+  commits. Previously committed batches remain. No retry/upsert, external committer,
+  checkpoint/restore or exactly-once delivery. An ambiguous commit must be reconciled.
+- Both: `query-timeout-seconds`1..300 (default30), pool acquisition10s, connect5s and
+  socket timeout query+5s. These are driver-configured limits, not a hard wall-clock
+  cancellation guarantee (including platform DNS). Operators are thread-confined.
+  Factories perform no IO. Runtime owns all cursors/statements/connections/pools.
+- Adapter-thrown database errors omit driver causes/row values. Packaged CLI suppresses
+  Hikari logs that could expose raw driver exceptions; pgjdbc server error detail is
+  disabled. Embedders must configure dependency logging safely; don't enable debug or
+  log credential option maps. No comprehensive arbitrary-logger redaction claim.
+
+### Real PostgreSQL verification gate (currently unrun)
+
+Provision a disposable PostgreSQL database with schema create/drop privileges; set
+`PINOT_PG_URL`, `PINOT_PG_USER`, `PINOT_PG_PASSWORD` and optionally
+`PINOT_PG_SSL_MODE` (default verify-full; use disable only for explicit local test DB).
+Run `./mvnw -pl connector-jdbc -am test`, then `./mvnw -pl seatunnel-cli -am verify`
+and `./mvnw -B -ntp verify` on an environment with artifact access. PostgresTest and
+the packaged CLI round-trip are explicitly skipped without PINOT_PG_URL; skips are
+**not** evidence that PostgreSQL passed. Tests create/drop their own unique schemas.
+
+Local evidence:195 executable proxy/config assertions, real JDBC/HSQLDB batch/rollback/
+partition/NULL exercise, resource-free discovery/example factories,630 regressions and
+11 prior LocalRunner examples. Pool-open was replaced **only in a temporary offline
+copy** with an injection-only stub; production Hikari method uncompiled/unexecuted
+locally (tagged API signatures reviewed). These checks do not verify Hikari, pgjdbc,
+PostgreSQL or the installed CLI. No Actions used. Stage7 remains incomplete.
