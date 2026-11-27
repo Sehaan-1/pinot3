@@ -211,6 +211,26 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineFiltersThenProjectsUsingInstalledProviders() throws Exception {
+    Result result =
+        run(Files.readString(Path.of("..", "examples", "fake-sql-project-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[\"row-12\",12]", "[\"row-14\",14]");
+  }
+
+  @Test
+  void invalidSqlProjectionFailsBeforeReadingSource() throws Exception {
+    Result result =
+        run(
+            "source.plugin=fake\nsink.plugin=console\n"
+                + "transforms=[{plugin=sql-project,options={columns=\"missing AS label\"}}]");
+    assertThat(result.code()).isEqualTo(1);
+    assertThat(result.output()).isEmpty();
+    assertThat(result.errors()).contains("Unknown SQL projection field");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(

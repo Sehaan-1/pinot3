@@ -73,6 +73,11 @@ public final class FieldTransforms {
     return new Mapping(input.columns().size(), output, projection);
   }
 
+  /** Internal reuse for validated library-backed projection plans. */
+  static SeaTunnelTransform project(CatalogTable input, CatalogTable output, int[] positions) {
+    return new Mapping(input.columns().size(), output, positions.clone());
+  }
+
   private static final class Mapping implements SeaTunnelTransform {
     private final int arity;
     private final CatalogTable output;

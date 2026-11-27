@@ -24,8 +24,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a1 | Field rename/copy + ordered local transform chains | ✅ Merged; full reactor run timed out |
 | 7a2 | Literal string replace/split | ✅ Merged by request; local checks only |
 | 7a3 | Jayway JSON-path extraction | Merged by request; supplemental checks only |
-| 7a4 | Library-backed SQL predicate filter | Draft; supplemental local checks only |
-| 7a5+ | SQL projection, advanced transforms, connectors | ⬜ |
+| 7a4 | Library-backed SQL predicate filter | Merged by request; supplemental local checks only |
+| 7a5 | SQL field selection/order/aliases | Draft; supplemental checks only |
+| 7a6+ | Computed SQL projection, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -134,7 +135,7 @@ the prior stage's schema; the sink receives the final schema. At most 32 stages,
 128 mappings per field transform. Names are case-sensitive; collisions and unknown
 fields fail before source reading. Copies are shallow, matching `SeaTunnelRow`.
 This remains bounded local execution, not distributed connector ETL. SQL/filter,
-Advanced transforms and SQL projection remain deferred. JSON-path is introduced in 7a3; SQL predicate filtering in 7a4.
+Advanced transforms and computed SQL expressions remain deferred. JSON-path is introduced in 7a3; SQL predicate filtering in 7a4 and field-only SQL projection in 7a5.
 
 ## Literal string transforms (Slice 7a2)
 
@@ -194,3 +195,29 @@ are trusted configuration, not a CPU sandbox; see [contracts](docs/SLICE-7A4.md)
 
 Local source-built parser/engine checks are supplemental. Maven/JUnit, packaged CLI
 E2E and full reactor verification remain unrun; no green-build claim or new Actions.
+
+## SQL field projection (Slice 7a5)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-project-console.conf --mode local
+```
+
+`sql-project` accepts exactly `columns`, a SQL SELECT **list**, for example
+`name AS label, id AS event_id` (not `SELECT ... FROM ...`). It selects, drops,
+reorders and aliases existing columns. The example composes after `sql-filter`:
+
+```text
+["row-12",12]
+["row-14",14]
+```
+
+JSqlParser 4.9 parses the entire list; only unqualified column references and explicit
+`AS` aliases are allowed. Names are exact-case simple ASCII identifiers, output names
+must be unique, and wildcard/functions/literals/computed expressions/clauses reject
+before source reading. Repeat a source only with distinct output aliases. All source
+types/nullability are preserved without SQL conversion, and each input emits one new
+row; mutable field objects remain shared as in `SeaTunnelRow`. Conditions belong in a
+preceding `sql-filter`, not in `columns`. See [bounds and contracts](docs/SLICE-7A5.md).
+
+Local source-built parser checks and the real LocalRunner example passed. This is
+supplemental verification, not a pinned Maven build or packaged CLI E2E result.
