@@ -32,7 +32,8 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a9 | Plain string and NULL literals for sql-string | Merged by request; supplemental checks only |
 | 7a10 | Bounded SQL IN and BETWEEN filters | Merged by request; supplemental checks only |
 | 7a11 | Bounded SQL LIKE and ESCAPE filters | Merged by request; supplemental checks only |
-| 7b, 7d–7k | Remaining advanced transforms and connectors | Scope authorized; implementation outstanding |
+| 7b1 | Native row kinds and metadata extractor | Local checks; Maven gates unrun |
+| 7b remainder, 7d–7k | Remaining advanced transforms and connectors | Scope authorized; implementation outstanding |
 | 7c | Spark/Flink translation | Optional; deferred |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -379,3 +380,27 @@ remaining work uses cohesive deliverables/PRs, with prerequisite row-kind/multi-
 streaming/transaction-runtime contracts where needed. Current local runner is bounded
 and non-transactional; those capabilities must not be advertised as already available.
 Both prior one-time Actions grants are spent; no new CI starts without permission.
+
+## Native row kinds and extraction (Slice 7b1)
+
+`SeaTunnelRow` now carries engine-independent `RowKind` metadata: INSERT (`+I`),
+UPDATE_BEFORE (`-U`), UPDATE_AFTER (`+U`), DELETE (`-D`). Existing constructors still
+create INSERT rows; use `SeaTunnelRow.ofKind(kind, fields...)` explicitly. `withFields`
+preserves kind, `withKind` changes it immutably, and `getFields()` remains data-only.
+Existing transforms preserve metadata. Equality includes kind; fields retain their
+existing shallow ownership (array copied, mutable cell objects shared). Legacy Java
+row streams lacking metadata read as INSERT; this is not a general checkpoint/wire
+compatibility guarantee. [API and transform contracts](docs/SLICE-7B1.md).
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-row-kind-console.conf --mode local
+```
+
+`row-kind-extractor` takes exactly `target`, appending a nonnullable STRING code from
+native metadata. It does not infer kind from a payload field and does not erase the
+native kind. FakeSource emits INSERT, so the example prints `[10,"+I"]`, `[11,"+I"]`.
+ConsoleSink prints data fields only; it does not implement database delete/upsert or
+transaction semantics. CDC, streaming execution and other Stage7 work remain pending.
+
+Local API/serialization/transform/regression checks and real LocalRunner examples
+passed; Maven/JUnit/packaged CLI gates are unrun. No Actions started.

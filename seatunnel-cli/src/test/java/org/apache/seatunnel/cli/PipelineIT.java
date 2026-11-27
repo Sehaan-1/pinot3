@@ -284,6 +284,13 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineExtractsNativeInsertKind() throws Exception {
+    Result result = run(Files.readString(Path.of("..", "examples", "fake-row-kind-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList()).containsExactly("[10,\"+I\"]", "[11,\"+I\"]");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(

@@ -106,7 +106,7 @@ public final class FieldTransforms {
         throw new IllegalArgumentException("Input arity mismatch");
       Object[] values = new Object[projection.length];
       for (int i = 0; i < values.length; i++) values[i] = row.getField(projection[i]);
-      return List.of(new SeaTunnelRow(values));
+      return List.of(row.withFields(values));
     }
 
     public void close() {

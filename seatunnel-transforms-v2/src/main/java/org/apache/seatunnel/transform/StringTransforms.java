@@ -40,7 +40,7 @@ public final class StringTransforms {
       SeaTunnelRow convert(SeaTunnelRow row, String value) {
         Object[] result = row.getFields();
         result[index] = value == null ? null : value.replace(search, replacement);
-        return new SeaTunnelRow(result);
+        return row.withFields(result);
       }
     };
   }
@@ -63,7 +63,7 @@ public final class StringTransforms {
           String[] tokens = value.split(literal, names.size());
           System.arraycopy(tokens, 0, result, row.getArity(), tokens.length);
         }
-        return new SeaTunnelRow(result);
+        return row.withFields(result);
       }
     };
   }

@@ -256,3 +256,16 @@ matrix, runtime blockers, dependency/license adoption and verification criteria.
 No empty connector stubs or falsely green mock E2E. This planning change implements no
 new connector or advanced transform. Next implementation starts with7b prerequisites/
 contracts, then cohesive connector PRs, JDBC first. Optional translation stays deferred.
+
+
+### Slice7b1: native row-kind metadata and extractor
+
+Planning PR22 explicitly merged. First advanced prerequisite adds engine-independent
+RowKind enum/SeaTunnelRow metadata (legacy constructors INSERT, old Java streams INSERT),
+immutable kind/field copies, metadata-aware equality and preservation through every
+existing transform. row-kind-extractor appends actual native short code, not payload
+inference. [Specification](SLICE-7B1.md). No new dependency/API engine coupling.
+123 local API/legacy/operator assertions +255 regressions and nine actual LocalRunner
+examples passed; JUnit/Maven/packaged CLI remain unrun. Zero Actions. User explicitly
+authorized merge22, next implementation, then merge that next PR; exception applies
+only to this deliverable. Remaining advanced transforms/connectors still outstanding.

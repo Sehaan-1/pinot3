@@ -40,8 +40,10 @@ supplemental evidence and explicit unverified merges only. A full verification g
    committer. It is not an unbounded streaming runtime or checkpoint/transaction driver.
 2. `SeaTunnelTransform` is a unary row-to-rows API; ordered chains do not implement
    multi-input topology, input watermarks, joins or merge coordination.
-3. `SeaTunnelRow` has positional fields, not native row-kind/change metadata. Never
-   advertise native row-kind extraction by merely renaming a string field.
+3. At the planning checkpoint `SeaTunnelRow` lacked native row-kind metadata. Slice7b1
+   adds that engine-independent carrier and a real metadata extractor with preservation
+   through existing transforms. Local checks only; Maven gates remain pending. CDC
+   envelope translation and row-kind-aware external sink semantics are still absent.
 4. Engine checkpoint decision/restore primitives exist, but that is not an integrated
    arbitrary-connector recovery/exactly-once pipeline. Prove the integration before
    claiming those delivery guarantees.
@@ -60,9 +62,9 @@ verification evidence, not merely an opened PR or a library dependency in a POM.
 
 | Done | Deliverable | Adopt / adapt (pins at implementation entry) | Public contract / required real E2E |
 |---|---|---|---|
-| [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | FilterToken exact semantics and bounds; explicit input/output row-kind contract; schema/lifecycle/null/error tests, installed chain E2E. Row-kind contract prerequisite must land first. |
+| [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | 7b1 introduces native row-kind/extractor and preservation (local verification only). FilterToken remains outstanding. Full schema/lifecycle/null/error tests and installed chain E2E remain required before checking off this bundle. |
 | [ ] | Multi-input prerequisite + TableMerge | Existing DAG/task/transport primitives; library serialization; no new scheduler in transforms | Define schema-aligned table union vs relational join explicitly (union is proposed baseline); multiple input lifecycle/backpressure/end-of-input, failure cleanup and real multi-source E2E. Unary chains alone do not satisfy this. |
-| [ ] |7d JDBC PostgreSQL source + sink | HikariCP + pgjdbc (Apache-2.0 / BSD-style); JDBC prepared statements | Bounded partitioned read, explicit schema, typed binding, cursor/resource ownership, batch flush/rollback/restore contracts, no false exactly-once claim. Real PostgreSQL round-trip and failure tests. See JDBC plan. |
+| [ ] |7d JDBC PostgreSQL source + sink | HikariCP + pgjdbc (Apache-2.0 / BSD-style); JDBC prepared statements | Bounded partitioned read, explicit schema, typed binding, cursor/resource ownership, batch flush/rollback/restore contracts, no false exactly-once claim. Real PostgreSQL round-trip and failure tests. JDBC specification required at implementation entry. |
 | [ ] |7d MySQL adapter and driver decision | JDBC/HikariCP reuse; driver license/distribution review first | Real MySQL round-trip/schema/type/quoting/NULL tests. pgjdbc/HSQLDB evidence does not count. Driver must be reproducibly loadable in installed CLI. |
 | [ ] | Streaming/checkpoint runtime prerequisite | Existing engine/transport/state primitives, no connector-owned coordinator | Unbounded poll/cancellation/backpressure, checkpoint->source offset/sink flush ordering, close/restart/restore tests with real adapters. No generic exactly-once promise without corresponding external protocol. |
 | [ ] |7e Kafka source + sink | Apache Kafka clients (Apache-2.0); Testcontainers Kafka | Partition assignment, offset snapshots/restore, key/value/schema format, bounded offset mode and live mode separately, delivery/retry/transaction claims explicit. Real broker E2E, restart/offset recovery and failure cleanup. |
@@ -100,7 +102,9 @@ change-metadata contracts. Independent connectors still remain separate PRs.
 ## Common contract gate for every connector PR
 
 1. Written spec/adoption plan first: module, exact pinned coordinates/licenses, options,
-   supported schema types, validation/redaction and precise scope/out-of-scope.
+   supported schema types, row kinds, validation/redaction and precise scope/out-of-scope.
+   Append-only external sinks must reject unsupported change kinds, not silently turn
+   DELETE/UPDATE_BEFORE into inserts.
 2. No resources opened in discovery/config/schema factories. Runtime owner creates and
    closes client/pool/reader/writer resources, including partial-start and error paths.
 3. Bounded blocking/polling/timeouts/cancellation specified; no unbounded hidden buffers.
@@ -133,6 +137,7 @@ are merged/verified, except a new explicit scoped waiver from the user.
 Stage7 is complete only when every mandatory row above is implemented, reviewed,
 merged and has its required verification evidence, with all delivery guarantees
 accurate and all known blockers resolved. Optional7c is listed as deferred, not done.
-There is no Stage7 completion claim in this planning PR. Next production deliverable:
-7b advanced-transform/change-metadata contract work, followed by the JDBC connector
-(first connector) and the remaining dependency-ordered rows.
+There is no Stage7 completion claim in this planning PR. Current production progress:7b1 native row-kind carrier/extractor and preservation,
+with supplemental local checks only. Next: remaining7b transform/runtime deliverables,
+then the JDBC connector (first connector) and remaining dependency-ordered rows. No
+mandatory row above is fully complete/verified yet.
