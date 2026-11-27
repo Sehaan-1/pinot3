@@ -16,7 +16,9 @@
  */
 package org.apache.seatunnel.transform;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +31,7 @@ import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.parser.TokenMgrException;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.apache.seatunnel.api.table.CatalogTable;
 import org.apache.seatunnel.api.table.CatalogTable.DataType;
 
@@ -36,6 +39,7 @@ import org.apache.seatunnel.api.table.CatalogTable.DataType;
 final class SqlFilterPlan {
   private final Map<String, DataType> fields = new HashMap<>();
   private int nodes;
+  private final List<SqlRowQuery.StringParameter> parameters = new ArrayList<>();
 
   private SqlFilterPlan(CatalogTable input) {
     if (input.columns().size() > 128)
@@ -51,19 +55,29 @@ final class SqlFilterPlan {
     }
   }
 
-  static String compile(CatalogTable input, String condition) {
+  record Compiled(String sql, List<SqlRowQuery.StringParameter> parameters) {
+    Compiled {
+      parameters = List.copyOf(parameters);
+    }
+  }
+
+  static Compiled compile(CatalogTable input, String condition) {
     if (condition == null || condition.isBlank() || condition.length() > 4096)
       throw new IllegalArgumentException("Expected SQL condition of 1..4096 characters");
     var compiler = new SqlFilterPlan(input);
     Expression expression;
     try {
-      expression = CCJSqlParserUtil.parseCondExpression(condition, false);
+      expression =
+          CCJSqlParserUtil.parseCondExpression(
+              condition, false, parser -> parser.withBackslashEscapeCharacter(false));
     } catch (JSQLParserException | TokenMgrException invalid) {
       throw new IllegalArgumentException("Invalid SQL predicate", invalid);
     }
     if (expression == null) throw new IllegalArgumentException("Invalid SQL predicate");
     compiler.condition(expression, 0);
-    return "SELECT 1 FROM " + rowSource(input) + " WHERE CAST((" + expression + ") AS BOOLEAN)";
+    return new Compiled(
+        "SELECT 1 FROM " + rowSource(input) + " WHERE CAST((" + expression + ") AS BOOLEAN)",
+        compiler.parameters);
   }
 
   static String rowSource(CatalogTable input) {
@@ -128,6 +142,44 @@ final class SqlFilterPlan {
       scalar(comparison.getRightExpression(), depth + 1);
       return;
     }
+    if (expression instanceof LikeExpression like) {
+      if (like.getLikeKeyWord() != LikeExpression.KeyWord.LIKE || like.isUseBinary())
+        throw new IllegalArgumentException("Only standard LIKE predicates are supported");
+      Expression sourceExpression = like.getLeftExpression();
+      while (sourceExpression instanceof Parenthesis parenthesis)
+        sourceExpression = parenthesis.getExpression();
+      if (sourceExpression instanceof StringValue literal && literal.getPrefix() != null)
+        throw new IllegalArgumentException("Expected plain LIKE source literal");
+      DataType source = scalar(like.getLeftExpression(), depth + 1);
+      if (source != null && source != DataType.STRING)
+        throw new IllegalArgumentException("Expected STRING LIKE source");
+      if (source == null)
+        like.setLeftExpression(
+            new CastExpression()
+                .withUseCastKeyword(true)
+                .withLeftExpression(like.getLeftExpression())
+                .withType(
+                    new ColDataType("VARCHAR")
+                        .withArgumentsStringList(
+                            List.of(Integer.toString(SqlRowQuery.MAX_STRING_CHARS)))));
+      Expression pattern = like.getRightExpression();
+      if (!(pattern instanceof NullValue)) {
+        String text = plainString(pattern, "pattern");
+        if (text.length() > 1024)
+          throw new IllegalArgumentException("LIKE pattern exceeds 1024 characters");
+      }
+      scalar(pattern, depth + 1);
+      like.setRightExpression(
+          parameter(pattern instanceof NullValue ? null : plainString(pattern, "pattern"), 1024));
+      if (like.getEscape() != null) {
+        String escape = plainString(like.getEscape(), "escape");
+        if (escape.length() != 1 || Character.isSurrogate(escape.charAt(0)))
+          throw new IllegalArgumentException("Expected one non-surrogate LIKE escape character");
+        scalar(like.getEscape(), depth + 1);
+        like.setEscape(parameter(escape, 1));
+      }
+      return;
+    }
     if (expression instanceof InExpression in) {
       if (in.isGlobal() || in.getOldOracleJoinSyntax() != 0 || in.getOraclePriorPosition() != 0)
         throw new IllegalArgumentException("Decorated SQL IN predicates are unsupported");
@@ -155,6 +207,21 @@ final class SqlFilterPlan {
     if (expression instanceof NullValue) return;
     if (expression instanceof Column && scalar(expression, depth + 1) == DataType.BOOLEAN) return;
     throw new IllegalArgumentException("Unsupported SQL predicate expression");
+  }
+
+  private Expression parameter(String value, int length) {
+    parameters.add(new SqlRowQuery.StringParameter(value));
+    return new CastExpression()
+        .withUseCastKeyword(true)
+        .withLeftExpression(new JdbcParameter())
+        .withType(
+            new ColDataType("VARCHAR").withArgumentsStringList(List.of(Integer.toString(length))));
+  }
+
+  private static String plainString(Expression expression, String role) {
+    if (!(expression instanceof StringValue literal) || literal.getPrefix() != null)
+      throw new IllegalArgumentException("Expected plain SQL string LIKE " + role);
+    return literal.getNotExcapedValue();
   }
 
   private DataType scalar(Expression expression, int depth) {

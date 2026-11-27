@@ -72,7 +72,6 @@ class SqlFilterTransformTest {
             "id + 1 > 2",
             "input.id > 1",
             "unknown=1",
-            "name LIKE '%'",
             "id = ?",
             "",
             "x".repeat(4097)))

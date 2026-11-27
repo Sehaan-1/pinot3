@@ -22,6 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.seatunnel.api.table.CatalogTable;
@@ -32,11 +33,17 @@ final class SqlRowQuery implements AutoCloseable {
   static final int MAX_STRING_CHARS = 1_048_576;
   private final CatalogTable input;
   private final String query;
+  private final List<StringParameter> parameters;
   private Connection connection;
   private PreparedStatement statement;
   private boolean opened, closed;
 
   SqlRowQuery(CatalogTable input, String query) {
+    this(input, query, List.of());
+  }
+
+  SqlRowQuery(CatalogTable input, String query, List<StringParameter> parameters) {
+    this.parameters = List.copyOf(parameters);
     this.input = Objects.requireNonNull(input, "input");
     this.query = Objects.requireNonNull(query, "query");
   }
@@ -86,6 +93,12 @@ final class SqlRowQuery implements AutoCloseable {
       throw new IllegalArgumentException("Input arity mismatch");
     try (SqlCleanup reset = statement::clearParameters) {
       for (int i = 0; i < row.getArity(); i++) bind(i, row.getField(i));
+      for (int i = 0; i < parameters.size(); i++) {
+        String value = parameters.get(i).value();
+        int index = row.getArity() + i + 1;
+        if (value == null) statement.setNull(index, Types.VARCHAR);
+        else statement.setString(index, value);
+      }
       try (ResultSet result = statement.executeQuery()) {
         return reader.read(result);
       }
@@ -136,6 +149,9 @@ final class SqlRowQuery implements AutoCloseable {
       // errors.
     }
   }
+
+  /** Validated immutable configuration string (SQL NULL represented by null value). */
+  record StringParameter(String value) {}
 
   @FunctionalInterface
   interface ResultReader<T> {
