@@ -19,8 +19,8 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 5 | `seatunnel-core` + `seatunnel-cli` + FakeSource + ConsoleSink (runnable baseline) | ✅ Merged |
 | 6a | `seatunnel-engine`: logical DAG + physical task planning | ✅ Merged |
 | 6b | Embedded Master/Worker and bounded remote tasks | ✅ Merged |
-| 6c | Replicated checkpoint decisions, split state and explicit recovery | In review — PR #8 |
-| 6d | Submit/REST | ⬜ |
+| 6c | Replicated checkpoint decisions, split state and explicit recovery | ✅ Merged |
+| 6d | Installed job submission REST + HTTP cluster client | In progress |
 | 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -92,3 +92,26 @@ seatunnel-e2e/           # Testcontainers end-to-end tests (Slice 7+)
 Apache License, Version 2.0 — see [LICENSE](LICENSE). Coordinates mirror
 upstream (`org.apache.seatunnel:seatunnel:3.0.0-SNAPSHOT`) for fidelity;
 this clone is not published to Maven Central.
+
+## Installed job cluster client (Slice 6d)
+
+An embedder installs trusted `JobDefinition` factories in `JobSubmissionService`,
+then starts `JobRestServer(service, bindAddress, port)` on the oldest engine member.
+Factories return physical plans and task bindings whose classes exist on all workers.
+The library does **not** expose generic connector HOCON submission or upload code.
+No server launcher or automatically wired distributed ETL is claimed.
+
+```sh
+java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar cluster submit \
+  --endpoint http://127.0.0.1:8080 --definition installed-job --parameters parameters.json
+java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar cluster status \
+  --endpoint http://127.0.0.1:8080 --job <job-uuid>
+# cluster cancel / cluster delete use the same endpoint and job options
+```
+
+`parameters.json` is a JSON object of strings. Definition IDs are chosen by the
+embedder; `installed-job` is illustrative, not a built-in production job. Poll
+status to observe failures/cancel siblings. Delete terminal records to release
+retention capacity. Do not blindly retry an uncertain POST. Private trusted
+networks only: this baseline has no TLS/authentication. See `docs/SLICE-6D.md`.
+Actions usage is constrained project-wide; consult `docs/CI-BUDGET.md` before pushing.

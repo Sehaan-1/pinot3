@@ -29,13 +29,14 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-/** Local-only CLI; stdout is reserved for data rows, stderr for diagnostics. */
+/** Local pipeline and HTTP cluster CLI; stdout is reserved for data rows, stderr for diagnostics. */
 @Command(
     name = "seatunnel",
+    subcommands = ClusterCommand.class,
     mixinStandardHelpOptions = true,
     version = "SeaTunnel local baseline 3.0.0-SNAPSHOT")
 public final class SeaTunnelCommand implements Callable<Integer> {
-  @Option(names = "--config", required = true, description = "HOCON job configuration file")
+  @Option(names = "--config", description = "HOCON job configuration file")
   private Path config;
 
   @Option(names = "--mode", defaultValue = "local", description = "Execution mode (local only)")
@@ -52,6 +53,9 @@ public final class SeaTunnelCommand implements Callable<Integer> {
     if (!"local".equals(mode)) {
       throw new CommandLine.ParameterException(
           new CommandLine(this), "Only --mode local is supported");
+    }
+    if (config == null) {
+      throw new CommandLine.ParameterException(new CommandLine(this), "Missing required option: --config");
     }
     new LocalRunner().run(JobConfig.parse(Config.parseFile(config.toFile())), output);
     return 0;
