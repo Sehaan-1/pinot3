@@ -17,7 +17,7 @@ PR checks only (no duplicate main push check); each job is capped at five minute
 This ledger is an operational policy, not an account-wide GitHub billing limiter:
 other branches/manual runs also consume minutes and must be accounted for before use.
 
-## Current handoff (Slice 7a6)
+## Current handoff (Slice 7a7)
 
 Three jobs since the user's authorization: 13s + 2m23s + 5m13s = **7m49s observed**,
 not a billing statement. All **15 conservative reservation minutes are allocated**;
@@ -114,3 +114,21 @@ Do not filter log lines out in tests or suppress parse failures. Retain JSON E2E
 assertions and add a packaged-JAR subprocess regression proving warnings go to stderr
 while stdout remains exact JSON. One non-skip commit triggers the single run on PR16;
 any post-run documentation/fixes use [skip ci]. Do not merge automatically.
+
+
+### Successful fix verification and next-slice status
+
+The second explicitly authorized run **46033295536** passed full reactor
+`./mvnw -B -ntp verify` at `032f66f752840182add7b9b5874d6f4d571d4aa4`:
+https://github.com/Sehaan-1/pinot3/actions/runs/46033295536
+Job duration **3m1s**, including JUnit and packaged CLI Failsafe/logging E2E.
+PR16 was explicitly merged; no new Actions were started for its merge.
+
+Historical7m49s + first scoped run3m55s + second scoped run3m1s = **14m45s
+observed**, not billing evidence or reclaimed time. Conservative reservations are
+**25 minutes** under the two explicit one-time exceptions, fully allocated. Both
+exceptions are spent; no future rerun/dispatch allowance exists.
+
+Slice7a7 starts zero Actions, uses [skip ci] and a draft PR. Source-built supplemental
+checks are not pinned Maven verification of new code. PR16's green result covers its
+own tested head only. No automatic merge or another CI run authorized.

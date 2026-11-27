@@ -118,6 +118,7 @@ class FieldTransformsTest {
               "field-rename",
               "json-path",
               "sql-filter",
+              "sql-long",
               "sql-project",
               "sql-string",
               "string-replace",

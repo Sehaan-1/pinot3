@@ -17,8 +17,6 @@
 package org.apache.seatunnel.transform;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.apache.seatunnel.api.table.CatalogTable;
@@ -27,31 +25,16 @@ import org.apache.seatunnel.api.transform.SeaTunnelTransform;
 
 /** Appends one bounded nullable STRING evaluated by the embedded SQL engine. */
 public final class SqlStringTransform implements SeaTunnelTransform {
-  private final CatalogTable output;
-  private final SqlRowQuery query;
+  private final SqlAppendTransform delegate;
 
   public SqlStringTransform(CatalogTable input, String expression, String target) {
     Objects.requireNonNull(input, "input");
-    if (target == null || target.length() > 128 || !target.matches("[A-Za-z_][A-Za-z0-9_]*"))
-      throw new IllegalArgumentException("Expected simple SQL string target identifier");
-    var columns = new ArrayList<>(input.columns());
-    columns.add(new CatalogTable.Column(target, CatalogTable.DataType.STRING, true));
-    output = new CatalogTable(input.name(), columns);
-    query = new SqlRowQuery(input, SqlStringPlan.compile(input, expression));
-  }
-
-  public CatalogTable producedTable() {
-    return output;
-  }
-
-  public void open() {
-    query.open();
-  }
-
-  public List<SeaTunnelRow> apply(SeaTunnelRow row) {
-    String value =
-        query.evaluate(
-            row,
+    delegate =
+        new SqlAppendTransform(
+            input,
+            SqlStringPlan.compile(input, expression),
+            target,
+            CatalogTable.DataType.STRING,
             result -> {
               if (!result.next()) throw new SQLException("SQL string expression returned no row");
               String text = result.getString(1);
@@ -59,12 +42,21 @@ public final class SqlStringTransform implements SeaTunnelTransform {
                 throw new IllegalArgumentException("SQL string result exceeds size limit");
               return text;
             });
-    Object[] fields = Arrays.copyOf(row.getFields(), output.columns().size());
-    fields[fields.length - 1] = value;
-    return List.of(new SeaTunnelRow(fields));
+  }
+
+  public CatalogTable producedTable() {
+    return delegate.producedTable();
+  }
+
+  public void open() {
+    delegate.open();
+  }
+
+  public List<SeaTunnelRow> apply(SeaTunnelRow row) {
+    return delegate.apply(row);
   }
 
   public void close() throws SQLException {
-    query.close();
+    delegate.close();
   }
 }
