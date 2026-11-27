@@ -6,3 +6,4 @@ org.apache.seatunnel.transform.JsonPathPlugin
 org.apache.seatunnel.transform.SqlFilterPlugin
 org.apache.seatunnel.transform.SqlProjectPlugin
 org.apache.seatunnel.transform.SqlStringPlugin
+org.apache.seatunnel.transform.SqlLongPlugin

@@ -26,8 +26,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a3 | Jayway JSON-path extraction | Merged by request; supplemental checks only |
 | 7a4 | Library-backed SQL predicate filter | Merged by request; supplemental local checks only |
 | 7a5 | SQL field selection/order/aliases | Merged by request; supplemental checks only |
-| 7a6 | Bounded SQL string functions | Draft; supplemental checks only |
-| 7a7+ | Broader computed expressions, advanced transforms, connectors | ⬜ |
+| 7a6 | Bounded SQL string functions | Merged; reactor verified in PR #16 |
+| 7a7 | Bounded SQL integer expressions | Draft; supplemental checks only |
+| 7a8+ | Broader expressions, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -245,3 +246,30 @@ The example emits `["ROW-10",10]` and `["ROW-11",11]`.
 
 Local adopted-parser/engine checks and three actual LocalRunner examples passed;
 Maven/JUnit, packaged CLI E2E and full-reactor verification remain unrun. No Actions.
+
+## SQL integer expressions (Slice 7a7)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-long-console.conf --mode local
+```
+
+`sql-long` accepts exactly `expression` and `target`. Example:
+`expression = "id * id", target = squared` appends nullable LONG. Select it afterward
+using `sql-project`; the example emits `[10,100]` and `[11,121]`.
+
+Supports existing INT/LONG fields with `+`, `-`, `*`, unary signs and parentheses.
+Every reference is promoted to SQL BIGINT first (so INT addition does not overflow
+at 32 bits). HSQLDB owns NULL propagation and signed 64-bit overflow errors; no
+silent wrapping. Literals, division/modulo, decimal/floating math, functions, casts,
+parameters, qualified names and SQL statements reject before opening. Inputs follow
+shared SQL schema/binding bounds; see [contracts](docs/SLICE-7A7.md).
+
+The existing SQL append/JDBC machinery is shared with `sql-string`; original values
+and metadata are preserved and each input emits a new row. Configuration is trusted,
+not a CPU/memory sandbox. New local operator/example checks passed; Maven/JUnit and
+packaged CLI E2E for this slice remain unrun. No Actions started.
+
+**Verification checkpoint:** PR #16 passed full Maven reactor verification at
+`032f66f`, including previously pending JUnit and packaged CLI E2E through Slice7a6,
+then merged. Its logging fix reserves stdout for JSON data and sends logs to stderr.
+That result does not verify the new Slice7a7 code.

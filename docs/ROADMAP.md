@@ -161,3 +161,18 @@ row-query implementation; no new dependency or API/engine coupling. General comp
 projection remains deferred. [Specification](SLICE-7A6.md).
 59 supplemental parser/JDBC assertions and three actual LocalRunner examples passed;
 Maven/JUnit, packaged CLI and full reactor remain unrun. Draft, [skip ci], zero Actions.
+
+
+### Verification checkpoint and Slice 7a7
+
+PR #16 fixed CLI log routing (stderr logs, JSON-only stdout), passed full Maven
+reactor verify at032f66f in run46033295536 (3m1s), and merged explicitly by request.
+This verifies the prior slices through7a6, not future changes.
+
+7a7 adds `sql-long`: INT/LONG field arithmetic with +,-,* and unary signs/parentheses,
+via pinned JSqlParser/HSQLDB; each reference promotes to BIGINT. Reuse SqlRowQuery,
+share append row/schema ownership with sql-string; no dependency/API/engine changes.
+[Specification](SLICE-7A7.md). Division/literals/decimals/general SQL remain deferred.
+39 new integer smoke assertions +59 prior string/filter regressions and four real
+LocalRunner SQL examples passed. New Maven/JUnit/packaged CLI gates remain pending.
+Zero Actions, [skip ci] draft; no automatic merge or additional CI authorization.

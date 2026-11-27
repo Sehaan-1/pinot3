@@ -243,6 +243,13 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineComputesLongThenProjects() throws Exception {
+    Result result = run(Files.readString(Path.of("..", "examples", "fake-sql-long-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList()).containsExactly("[10,100]", "[11,121]");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(
