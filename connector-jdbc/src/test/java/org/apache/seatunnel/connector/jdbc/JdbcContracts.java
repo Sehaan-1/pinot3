@@ -90,6 +90,11 @@ final class JdbcContracts {
     final List<String> events = new ArrayList<>();
     final List<Object> bound = new ArrayList<>();
     String failure = "";
+    JdbcDialect dialect = JdbcDialect.POSTGRES;
+    int overrideType = Integer.MIN_VALUE, precision = 1;
+    boolean signed = true;
+    String engine = "InnoDB";
+    boolean engineQuery;
     int batches, cursor = -1;
     boolean nullCell;
     Object[][] rows = {{true, 1, 10L, 1.5, "one"}, {false, 2, 20L, 2.5, null}};
@@ -110,7 +115,11 @@ final class JdbcContracts {
       if (failure.equals(name)) throw new SQLException("TOP_SECRET driver data");
       switch (name) {
         case "prepareStatement":
-          check(((String) args[0]).contains("\"public\".\"events\""));
+          engineQuery = ((String) args[0]).startsWith("SELECT ENGINE FROM");
+          if (!engineQuery)
+            check(
+                ((String) args[0])
+                    .contains(dialect.quote("public") + "." + dialect.quote("events")));
           return proxy(PreparedStatement.class);
         case "setBoolean", "setInt", "setLong", "setDouble", "setString", "setNull":
           bound.add(name + ":" + args[0] + ":" + args[1]);
@@ -133,13 +142,19 @@ final class JdbcContracts {
         case "getColumnCount":
           return 5;
         case "getColumnType":
+          if (overrideType != Integer.MIN_VALUE && (int) args[0] == 2) return overrideType;
+          if (dialect == JdbcDialect.MYSQL && (int) args[0] == 1) return Types.BIT;
           return JdbcTypes.sqlType(columns().get((int) args[0] - 1).type());
+        case "getPrecision":
+          return precision;
+        case "isSigned":
+          return signed;
         case "getColumnLabel":
           return columns().get((int) args[0] - 1).name();
         case "next":
-          return ++cursor < rows.length;
+          return ++cursor < (engineQuery ? 1 : rows.length);
         case "getBoolean", "getInt", "getLong", "getDouble", "getString":
-          Object value = rows[cursor][(int) args[0] - 1];
+          Object value = engineQuery ? engine : rows[cursor][(int) args[0] - 1];
           nullCell = value == null;
           if (value != null) return value;
           if (name.equals("getString")) return null;

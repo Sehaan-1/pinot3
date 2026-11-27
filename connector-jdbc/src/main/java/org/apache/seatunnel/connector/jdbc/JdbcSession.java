@@ -38,10 +38,11 @@ final class JdbcSession implements AutoCloseable {
 
   static JdbcSession open(JdbcConfig config, boolean readOnly) throws SQLException {
     HikariDataSource pool = null;
+    Connection connection = null;
     try {
       HikariConfig settings = new HikariConfig();
       settings.setJdbcUrl(config.url);
-      settings.setDriverClassName("org.postgresql.Driver");
+      settings.setDriverClassName(config.dialect.driver);
       settings.setUsername(config.user);
       settings.setPassword(config.password);
       settings.setMaximumPoolSize(1);
@@ -53,14 +54,19 @@ final class JdbcSession implements AutoCloseable {
       settings.setReadOnly(readOnly);
       settings.setTransactionIsolation(
           readOnly ? "TRANSACTION_REPEATABLE_READ" : "TRANSACTION_READ_COMMITTED");
-      settings.addDataSourceProperty("sslmode", config.sslMode);
-      settings.addDataSourceProperty("connectTimeout", "5");
-      settings.addDataSourceProperty("socketTimeout", Integer.toString(config.timeout + 5));
-      settings.addDataSourceProperty("tcpKeepAlive", "true");
-      settings.addDataSourceProperty("logServerErrorDetail", "false");
+      config.dialect.properties(config).forEach(settings::addDataSourceProperty);
       pool = new HikariDataSource(settings);
-      return new JdbcSession(pool.getConnection(), pool);
+      connection = pool.getConnection();
+      config.dialect.validateTable(connection, config);
+      return new JdbcSession(connection, pool);
     } catch (Exception failure) {
+      if (connection != null) {
+        try {
+          connection.close();
+        } catch (Exception ignored) {
+          /* Redacted below. */
+        }
+      }
       if (pool != null) {
         try {
           pool.close();
@@ -73,7 +79,7 @@ final class JdbcSession implements AutoCloseable {
   }
 
   static SQLException databaseFailure() {
-    return new SQLException("PostgreSQL JDBC operation failed (driver details redacted)");
+    return new SQLException("JDBC operation failed (driver details redacted)");
   }
 
   @Override

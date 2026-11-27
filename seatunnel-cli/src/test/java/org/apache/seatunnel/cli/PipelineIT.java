@@ -34,13 +34,22 @@ class PipelineIT {
   private record Result(int code, String output, String errors) {}
 
   private Result run(String configText, String... extra) throws Exception {
+    return runWithDriver(null, configText, extra);
+  }
+
+  private Result runWithDriver(String driverClasspath, String configText, String... extra)
+      throws Exception {
     Path folder = Files.createDirectory(temporary.resolve("run-" + sequence++));
-    List<String> args =
-        new ArrayList<>(
-            List.of(
-                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
-                "-jar",
-                Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toAbsolutePath().toString()));
+    var args = new ArrayList<String>();
+    args.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
+    String jar = Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toAbsolutePath().toString();
+    if (driverClasspath == null) args.addAll(List.of("-jar", jar));
+    else
+      args.addAll(
+          List.of(
+              "-cp",
+              jar + java.io.File.pathSeparator + driverClasspath,
+              "org.apache.seatunnel.cli.SeaTunnelCommand"));
     if (configText != null) {
       Path config = folder.resolve("job.conf");
       Files.writeString(config, configText);
@@ -60,6 +69,84 @@ class PipelineIT {
     } finally {
       if (process.isAlive()) {
         process.destroyForcibly().waitFor();
+      }
+    }
+  }
+
+  @Test
+  void defaultExecutableNeverBundlesMysqlDriverEvenWithTestProfile() throws Exception {
+    try (var jar =
+        new java.util.jar.JarFile(Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toFile())) {
+      assertThat(jar.stream().noneMatch(e -> e.getName().startsWith("com/mysql/cj/"))).isTrue();
+    }
+  }
+
+  @Test
+  @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(
+      named = "PINOT_MYSQL_URL",
+      matches = ".+")
+  void packagedMysqlRoundTripUsesOperatorSuppliedDriverClasspath() throws Exception {
+    String driver = System.getenv("PINOT_MYSQL_DRIVER_CLASSPATH");
+    assertThat(driver)
+        .as("Provide operator-owned Connector/J and dependencies classpath")
+        .isNotBlank();
+    String url = System.getenv("PINOT_MYSQL_URL");
+    String schema = java.net.URI.create(url.substring(5)).getPath().substring(1);
+    String table = "test_cli_" + java.util.UUID.randomUUID().toString().replace("-", "");
+    var properties = new java.util.Properties();
+    properties.setProperty("user", System.getenv("PINOT_MYSQL_USER"));
+    properties.setProperty("password", System.getenv("PINOT_MYSQL_PASSWORD"));
+    String ssl = System.getenv().getOrDefault("PINOT_MYSQL_SSL_MODE", "VERIFY_IDENTITY");
+    properties.setProperty("sslMode", ssl);
+    properties.setProperty("connectTimeout", "5000");
+    properties.setProperty("socketTimeout", "35000");
+    properties.setProperty("allowPublicKeyRetrieval", "false");
+    String mode =
+        switch (ssl) {
+          case "VERIFY_IDENTITY" -> "verify-full";
+          case "REQUIRED" -> "require";
+          case "DISABLED" -> "disable";
+          default -> throw new IllegalArgumentException("Invalid MySQL test sslMode");
+        };
+    String options =
+        "url=${PINOT_MYSQL_URL}\n"
+            + "user=${PINOT_MYSQL_USER}\n"
+            + "password=${PINOT_MYSQL_PASSWORD}\n"
+            + "schema="
+            + schema
+            + "\ntable="
+            + table
+            + "\nssl-mode="
+            + mode
+            + "\n";
+    try (var connection = java.sql.DriverManager.getConnection(url, properties);
+        var ddl = connection.createStatement()) {
+      ddl.execute(
+          "CREATE TABLE `" + table + "` (id BIGINT PRIMARY KEY,name TEXT NOT NULL) ENGINE=InnoDB");
+      try {
+        Result written =
+            runWithDriver(
+                driver,
+                "source {plugin=fake,options={rows=3,start=10}}\n"
+                    + "sink {plugin=jdbc-mysql,options {\n"
+                    + options
+                    + "batch-size=2\n}}");
+        assertThat(written.code()).as(written.errors()).isZero();
+        assertThat(written.output()).isEmpty();
+        Result read =
+            runWithDriver(
+                driver,
+                "source {plugin=jdbc-mysql,options {\n"
+                    + options
+                    + "columns=[{name=id,type=LONG,nullable=false},{name=name,type=STRING,nullable=false}]\n"
+                    + "fetch-size=1\n"
+                    + "}}\n"
+                    + "sink.plugin=console");
+        assertThat(read.code()).as(read.errors()).isZero();
+        assertThat(read.output().lines().toList())
+            .containsExactlyInAnyOrder("[10,\"row-10\"]", "[11,\"row-11\"]", "[12,\"row-12\"]");
+      } finally {
+        ddl.execute("DROP TABLE `" + table + "`");
       }
     }
   }

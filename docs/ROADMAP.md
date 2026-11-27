@@ -315,3 +315,21 @@ convergence/full reactor remain UNRUN. No Actions. Latest next-then-merge author
 this single PostgreSQL adapter PR merge with gaps, not new CI or later connectors.
 Next: JDBC verification and explicit MySQL driver license/packaging decision, then
 streaming prerequisites/remaining connectors. PostgreSQL/JDBC row remains unchecked.
+
+
+### Slice7d2: MySQL JDBC dialect and driver ownership
+
+[Specification](SLICE-7D2.md) first; [license/packaging policy](MYSQL-DRIVER.md).
+Reuse JDBC source/sink/Hikari/resource contracts. Dialect-only MySQL adaptation: strict
+URL/database match, backticks, explicit TLS/cursor/timeouts/no reconnect, signed numeric/
+BIT(1) metadata, runtime InnoDB check. Official Connector/J26.10.0 is GPLv2+additional
+permissions/Universal FOSS Exception, not permissive. Operator-owned external driver;
+no default runtime/shaded dependency. Explicit mysql-driver-tests profile is test-only.
+Tagged build/license/properties reviewed; exact-version advisory query returned no
+entries (not full audit).102 local dialect/proxy checks +825 regressions, two real
+HSQLDB JDBC exercises, discovery/example factories and11 old pipelines passed. Pool
+opening remains bypassed only in an offline copy for injected tests, not production.
+Actual MySQL/official driver/Hikari/JUnit/CLI/artifact exclusion/convergence/full reactor
+are UNRUN. Latest next-then-merge permits this single PR merge, not Actions or future
+connector merges. JDBC remains unchecked. Next: streaming/checkpoint runtime prerequisites
+with JDBC/7b acceptance gaps carried forward; Stage7 not complete.

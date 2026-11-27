@@ -82,6 +82,20 @@
         </dependency>
     </dependencies>
 
+    <!-- Explicit opt-in, test-only: never shaded into the default executable/distribution. -->
+    <profiles>
+        <profile>
+            <id>mysql-driver-tests</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.mysql</groupId>
+                    <artifactId>mysql-connector-j</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>

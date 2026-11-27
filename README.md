@@ -35,8 +35,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7b1 | Native row kinds and metadata extractor | Merged by request; Maven gates unrun |
 | 7b2 | Exact token filters (ANY/ALL) | Merged by request; Maven gates unrun |
 | 7b3 | Bounded multi-input TableMerge | Merged by request; Maven gates unrun |
-| 7d1 | PostgreSQL JDBC source + sink | Implemented; real PostgreSQL/Maven gates unrun |
-| 7d remainder–7k | Other connectors and streaming prerequisites | Scope authorized; implementation outstanding |
+| 7d1 | PostgreSQL JDBC source + sink | Merged by request; service/Maven gates unrun |
+| 7d2 | MySQL JDBC adapter, operator-owned driver | Implemented; MySQL/driver/Maven gates unrun |
+| 7e–7k | Other connectors and streaming prerequisites | Scope authorized; implementation outstanding |
 | 7c | Spark/Flink translation | Optional; deferred |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -464,7 +465,7 @@ this does not claim fully verified 7b or completed Stage7 connectors.
 · [Fake → Postgres](examples/fake-to-postgres.conf).
 `connector-jdbc` installs source and sink `jdbc-postgres` in the CLI. HikariCP7.1.0 owns
 pooling; pgjdbc42.7.15 owns protocol/cursor/typed codecs. SLF4J is aligned to2.0.17 and
-checker-qual3.55.1 aligns pgjdbc/Guava annotations. MySQL is **not** implemented here.
+checker-qual3.55.1 aligns pgjdbc/Guava annotations. MySQL is a separate dialect adaptation in7d2; see the external-driver policy below.
 
 Both endpoints require `url`, `user`, `password`, `schema`, `table`. URL must be
 `jdbc:postgresql://host[:port]/database` with a simple database name and no query,
@@ -514,3 +515,30 @@ partition/NULL exercise, resource-free discovery/example factories,630 regressio
 copy** with an injection-only stub; production Hikari method uncompiled/unexecuted
 locally (tagged API signatures reviewed). These checks do not verify Hikari, pgjdbc,
 PostgreSQL or the installed CLI. No Actions used. Stage7 remains incomplete.
+
+
+## MySQL JDBC (Slice 7d2)
+
+[Specification](docs/SLICE-7D2.md) · [Driver policy/execution/gates](docs/MYSQL-DRIVER.md)
+· [MySQL → Console](examples/mysql-to-console.conf) · [Fake → MySQL](examples/fake-to-mysql.conf).
+`jdbc-mysql` reuses the JDBC lifecycle/batching/range implementation, with backtick
+quoting, MySQL timeouts/cursor/TLS settings and strict signed numeric/BIT(1) metadata.
+Runtime rejects non-InnoDB base tables/views before user IO; concurrent DDL is unsupported.
+Source URL database must match `schema`. All7d1 no-restore/no-retry/INSERT-only/no-exactly-
+once limitations remain; old committed batches are not rolled back after later failure.
+
+Official Connector/J26.10.0 is **GPLv2 + additional permissions/Universal FOSS Exception,
+not permissive**. It is not a default runtime dependency and must not be shaded into
+the distribution. Operators obtain/license it and required dependencies separately.
+Use standard JVM `java -cp cli.jar:<operator-driver-classpath>` with
+`org.apache.seatunnel.cli.SeaTunnelCommand`; plain `java -jar` does not add an external
+driver. The `mysql-driver-tests` Maven profile is explicit and **test-only**. Packaging
+choices are not legal approval/exemption; see the policy before use or redistribution.
+
+102 executable MySQL proxy/dialect assertions passed, plus825 regressions, both JDBC/
+HSQLDB exercises, no-IO discovery/example factories and11 existing pipelines. These
+are supplemental only. Production Hikari pool opening (including its call to the
+engine check) remains uncompiled/unrun locally; temporary tests inject JDBC sessions.
+Actual MySQL/Connector/J/Hikari, gated JUnit/installed CLI roundtrips, default-artifact
+exclusion, dependency convergence and Maven/full reactor gates remain **UNRUN**. No
+Actions. JDBC completion remains unchecked; streaming runtime is the next prerequisite.

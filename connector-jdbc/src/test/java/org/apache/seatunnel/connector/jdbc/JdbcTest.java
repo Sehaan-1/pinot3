@@ -34,6 +34,12 @@ class JdbcTest {
                 org.apache.seatunnel.plugin.SinkPlugin.class)) {
       JdbcContracts.check(sources.identifiers().contains("jdbc-postgres"));
       JdbcContracts.check(sinks.identifiers().contains("jdbc-postgres"));
+      JdbcContracts.check(sources.identifiers().contains("jdbc-mysql"));
+      JdbcContracts.check(sinks.identifiers().contains("jdbc-mysql"));
+      sources.get("jdbc-mysql").createSource(MysqlContracts.options(true));
+      sinks
+          .get("jdbc-mysql")
+          .createSink(MysqlContracts.options(false), JdbcContracts.table(), null);
       sources.get("jdbc-postgres").createSource(JdbcContracts.sourceOptions());
       sinks.get("jdbc-postgres").createSink(JdbcContracts.options(), JdbcContracts.table(), null);
     }

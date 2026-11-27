@@ -1,1 +1,2 @@
 org.apache.seatunnel.connector.jdbc.JdbcSinkPlugin
+org.apache.seatunnel.connector.jdbc.MysqlSinkPlugin

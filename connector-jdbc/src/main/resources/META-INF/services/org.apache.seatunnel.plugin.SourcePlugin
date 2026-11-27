@@ -1,1 +1,2 @@
 org.apache.seatunnel.connector.jdbc.JdbcSourcePlugin
+org.apache.seatunnel.connector.jdbc.MysqlSourcePlugin

@@ -22,7 +22,7 @@ import org.apache.seatunnel.api.source.*;
 import org.apache.seatunnel.api.state.CheckpointState;
 import org.apache.seatunnel.api.table.*;
 
-/** Bounded PostgreSQL cursor scan; explicit half-open ranges, no ordering or restore claim. */
+/** Bounded JDBC cursor scan; explicit half-open ranges, no ordering or restore claim. */
 public final class JdbcSource
     implements SeaTunnelSource<JdbcSource.Split, JdbcSource.State, JdbcSource.State> {
   private final JdbcConfig config;
@@ -169,9 +169,9 @@ public final class JdbcSource
           if (config.partitionColumn != null)
             sql +=
                 " WHERE "
-                    + JdbcConfig.quote(config.partitionColumn)
+                    + config.quote(config.partitionColumn)
                     + ">=? AND "
-                    + JdbcConfig.quote(config.partitionColumn)
+                    + config.quote(config.partitionColumn)
                     + "<?";
           statement =
               session.connection.prepareStatement(

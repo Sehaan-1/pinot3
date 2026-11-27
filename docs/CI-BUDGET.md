@@ -194,3 +194,13 @@ disclosed verification gaps. Zero Actions, [skip ci]; reserved25m/observed14m45s
 production pool-open for injected JDBC tests; not Hikari/pgjdbc/PostgreSQL evidence.
 Gated real PostgreSQL/packaged CLI tests added but UNRUN, as are affected Maven/JUnit/
 convergence/full reactor. No connector row checked off; no future merge/CI grant.
+
+
+Slice7d2: next-then-merge scopes an unverified-merge exception to this next MySQL dialect/
+external-driver-policy PR only. Zero Actions, [skip ci], reserved25m/observed14m45s
+unchanged; previous CI exceptions spent.102 proxy/dialect assertions,825 regressions,
+two JDBC/HSQLDB exercises, no-IO discovery/examples and11 previous pipelines passed.
+Offline session copy bypasses Hikari open; no actual MySQL/ConnectorJ/Hikari/Maven/JUnit/
+installed CLI/artifact-exclusion/convergence/full reactor evidence. Test profile is
+explicit/test-only; driver licensing and real service provision remain operator-owned.
+No connector completion checkmark or future CI/merge authorization.

@@ -28,10 +28,16 @@ import org.apache.seatunnel.common.exception.ConfigException;
 final class JdbcConfig {
   final String url, user, password, schema, table, sslMode, partitionColumn;
   final CatalogTable catalog;
+  final JdbcDialect dialect;
   final int fetchSize, batchSize, timeout;
   final List<JdbcSource.Split> splits;
 
   JdbcConfig(Map<String, Object> options, CatalogTable input) {
+    this(options, input, JdbcDialect.POSTGRES);
+  }
+
+  JdbcConfig(Map<String, Object> options, CatalogTable input, JdbcDialect dialect) {
+    this.dialect = Objects.requireNonNull(dialect);
     var allowed =
         new HashSet<>(
             Set.of(
@@ -51,7 +57,7 @@ final class JdbcConfig {
     user = text(options, "user");
     password = text(options, "password");
     try {
-      if (!url.startsWith("jdbc:postgresql://")) throw new IllegalArgumentException();
+      if (!url.startsWith(dialect.prefix)) throw new IllegalArgumentException();
       URI uri = URI.create(url.substring(5));
       if (uri.getHost() == null
           || uri.getUserInfo() != null
@@ -63,10 +69,13 @@ final class JdbcConfig {
           || !uri.getRawPath().matches("/[A-Za-z0-9_-]{1,63}"))
         throw new IllegalArgumentException();
     } catch (IllegalArgumentException failure) {
-      throw bad("Invalid PostgreSQL URL (no properties or credentials allowed)");
+      throw bad("Invalid JDBC URL (no properties or credentials allowed)");
     }
     schema = identifier(text(options, "schema"));
     table = identifier(text(options, "table"));
+    if (dialect == JdbcDialect.MYSQL
+        && !URI.create(url.substring(5)).getRawPath().equals("/" + schema))
+      throw bad("MySQL URL database must match schema");
     sslMode = options.containsKey("ssl-mode") ? text(options, "ssl-mode") : "verify-full";
     if (!Set.of("verify-full", "require", "disable").contains(sslMode))
       throw bad("Invalid ssl-mode");
@@ -154,8 +163,8 @@ final class JdbcConfig {
     return String.join(",", catalog.columns().stream().map(c -> quote(c.name())).toList());
   }
 
-  static String quote(String value) {
-    return "\"" + identifier(value) + "\"";
+  String quote(String value) {
+    return dialect.quote(value);
   }
 
   static String identifier(String value) {
