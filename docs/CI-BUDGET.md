@@ -73,3 +73,26 @@ that previously exhausted the timeout. Existing PR-only triggers and five-minute
 remain unchanged; no push/main/scheduled/manual trigger is enabled. Open a verification
 PR without [skip ci] exactly once, then use [skip ci] for any follow-up record/fixes.
 This is verification-only, not authorization to merge that PR or begin another slice.
+
+
+### One-time run outcome — no rerun
+
+- PR #16, tested head `dd9c816`, run **46031639568**:
+  https://github.com/Sehaan-1/pinot3/actions/runs/46031639568
+- Job ran 2026-11-27T16:12:43Z–16:16:38Z: **3m55s observed**, conclusion
+  **failure**, not timeout. The single five-minute reservation is consumed; no
+  reclaim/rerun. Historical plus this run = **11m44s observed**, not billing evidence;
+  conservative reservations remain **20 minutes total**.
+- Reactor reached CLI Failsafe. Reported CLI integration aggregate: 16 tests,
+  zero assertion failures, one error, zero skipped. PipelineIT: 15 tests, one error.
+  Error: `packagedPipelineExtractsJsonUsingInstalledProvider`, line198,
+  Jackson JsonParseException: unexpected ':' (code58), expected space separating
+  root-level values while parsing CLI stdout. Process exit code assertion had passed.
+  Do not claim full reactor success. Earlier reactor stages did not block CLI verify;
+  full individual suite counts are not available from annotations.
+- Failure annotation obtained via Checks API. Raw log and report artifact download
+  redirects are blocked by sandbox egress; exact stdout and complete reports have
+  not been inspected. Default Logback console output is a possible cause (only a
+  test logging config exists), but this is not yet a confirmed root cause.
+- No automatic fixes/rerun/merge. Existing PR-only triggers unchanged; this follow-up
+  record uses [skip ci]. More Actions require another explicit user authorization.
