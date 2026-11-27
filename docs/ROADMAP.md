@@ -150,3 +150,14 @@ alias only; computed expressions remain deferred. [Specification](SLICE-7A5.md).
 62 supplemental assertions and the actual LocalRunner -> FakeSource -> sql-filter ->
 sql-project -> ConsoleSink example passed. Pinned Maven/JUnit and packaged CLI E2E
 remain unrun. Zero Actions, `[skip ci]` draft PR; no automatic merge authorization.
+
+
+### Slice 7a6: bounded SQL string expressions
+
+PR #14 / 7a5 explicitly merged by request, without a Maven verification claim.
+7a6 adopts existing pinned JSqlParser 4.9/HSQLDB 2.7.4 for UPPER/LOWER/CONCAT/COALESCE
+of STRING fields only, appending one nullable STRING. Share the existing filter JDBC
+row-query implementation; no new dependency or API/engine coupling. General computed
+projection remains deferred. [Specification](SLICE-7A6.md).
+59 supplemental parser/JDBC assertions and three actual LocalRunner examples passed;
+Maven/JUnit, packaged CLI and full reactor remain unrun. Draft, [skip ci], zero Actions.

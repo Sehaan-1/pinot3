@@ -119,6 +119,7 @@ class FieldTransformsTest {
               "json-path",
               "sql-filter",
               "sql-project",
+              "sql-string",
               "string-replace",
               "string-split");
       try (var transform =

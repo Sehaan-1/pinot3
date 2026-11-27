@@ -62,6 +62,11 @@ final class SqlFilterPlan {
     }
     if (expression == null) throw new IllegalArgumentException("Invalid SQL predicate");
     compiler.condition(expression, 0);
+    return "SELECT 1 FROM " + rowSource(input) + " WHERE CAST((" + expression + ") AS BOOLEAN)";
+  }
+
+  static String rowSource(CatalogTable input) {
+    new SqlFilterPlan(input); // Reuse the same schema/name/type validation for every SQL row query.
     String bindings =
         input.columns().stream()
             .map(column -> "CAST(? AS " + sqlType(column.type()) + ")")
@@ -70,13 +75,7 @@ final class SqlFilterPlan {
         input.columns().stream()
             .map(column -> "\"" + column.name() + "\"")
             .collect(Collectors.joining(","));
-    return "SELECT 1 FROM (VALUES("
-        + bindings
-        + ")) AS \"input\"("
-        + columns
-        + ") WHERE CAST(("
-        + expression
-        + ") AS BOOLEAN)";
+    return "(VALUES(" + bindings + ")) AS \"input\"(" + columns + ")";
   }
 
   static String sqlType(DataType type) {
