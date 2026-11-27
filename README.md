@@ -582,3 +582,7 @@ Real Hazelcast integration test, JUnit/Maven/installed CLI/full reactor remain *
 the local test repository serializes state but is neither a production store nor proof
 of real external delivery. Existing adapter-format dependencies were temporary shaded/
 source-built copies. No Actions; streaming/JDBC acceptance rows remain unchecked.
+
+Kafka raw-byte bounded/live source and acknowledged sink are implemented in
+`connector-kafka`; see [Kafka operations and verification limits](docs/KAFKA.md) and
+`examples/kafka/`. Real SDK/broker/build acceptance is still outstanding; no exactly-once claim.

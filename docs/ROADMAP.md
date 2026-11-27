@@ -355,3 +355,7 @@ installed CLI/full reactor remain UNRUN. Zero Actions. This user instruction per
 this single next PR merge, not future merges or CI. Stream acceptance incomplete;
 no automatic fencing/HA/CLI streaming/parallel topology/exactly-once claim. Next: Kafka
 integration, with actual runtime/JDBC/service gates carried forward.
+
+Slice7e1 Kafka implementation is present (source/sink/security/offsets/recovery/CLI/test
+gates), but Kafka/streaming completion is NOT accepted: production SDK/Maven/broker and
+packaged gates remain unrun. [Contract and evidence](KAFKA.md).

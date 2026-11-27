@@ -213,3 +213,6 @@ Production bridge/coordinator/record/repository subset compiled without substitu
 local test repository only, not production replication/external service proof. New
 Hazelcast/JUnit/affected Maven/store build/installed CLI/full reactor UNRUN. No remaining
 CI grant inferred; Stage7 streaming/JDBC acceptance stays unchecked.
+
+Slice7e1 Kafka: zero Actions; no further allowance granted. Local supplemental port tests
+only; SDK/Maven/broker/packaged gates remain unrun. See KAFKA.md.
