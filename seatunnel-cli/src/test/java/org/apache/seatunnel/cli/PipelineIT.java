@@ -267,6 +267,15 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineFiltersWithInAndBetween() throws Exception {
+    Result result =
+        run(Files.readString(Path.of("..", "examples", "fake-sql-predicates-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[12,\"row-12\"]", "[14,\"row-14\"]");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(

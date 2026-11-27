@@ -27,6 +27,7 @@ import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.parser.TokenMgrException;
 import net.sf.jsqlparser.schema.Column;
 import org.apache.seatunnel.api.table.CatalogTable;
 import org.apache.seatunnel.api.table.CatalogTable.DataType;
@@ -57,7 +58,7 @@ final class SqlFilterPlan {
     Expression expression;
     try {
       expression = CCJSqlParserUtil.parseCondExpression(condition, false);
-    } catch (JSQLParserException invalid) {
+    } catch (JSQLParserException | TokenMgrException invalid) {
       throw new IllegalArgumentException("Invalid SQL predicate", invalid);
     }
     if (expression == null) throw new IllegalArgumentException("Invalid SQL predicate");
@@ -127,6 +128,24 @@ final class SqlFilterPlan {
       scalar(comparison.getRightExpression(), depth + 1);
       return;
     }
+    if (expression instanceof InExpression in) {
+      if (in.isGlobal() || in.getOldOracleJoinSyntax() != 0 || in.getOraclePriorPosition() != 0)
+        throw new IllegalArgumentException("Decorated SQL IN predicates are unsupported");
+      if (!(in.getRightExpression() instanceof ParenthesedExpressionList<?> items)
+          || items.isEmpty()
+          || items.size() > 64)
+        throw new IllegalArgumentException("Expected SQL IN list of 1..64 scalar items");
+      scalar(in.getLeftExpression(), depth + 1);
+      visit(depth + 1); // Count the list node as well as every scalar child.
+      for (var item : items) scalar(item, depth + 2);
+      return;
+    }
+    if (expression instanceof Between between) {
+      scalar(between.getLeftExpression(), depth + 1);
+      scalar(between.getBetweenExpressionStart(), depth + 1);
+      scalar(between.getBetweenExpressionEnd(), depth + 1);
+      return;
+    }
     if (expression instanceof IsNullExpression isNull) {
       if (isNull.isUseIsNull() || isNull.isUseNotNull())
         throw new IllegalArgumentException("Use IS NULL / IS NOT NULL");
@@ -147,10 +166,15 @@ final class SqlFilterPlan {
     if (expression instanceof NullValue) return null;
     if (expression instanceof SignedExpression signed
         && signed.getExpression() instanceof LongValue
-        && (signed.getSign() == '-' || signed.getSign() == '+')) return DataType.LONG;
+        && (signed.getSign() == '-' || signed.getSign() == '+')) {
+      visit(depth + 1);
+      return DataType.LONG;
+    }
     if (expression instanceof Column column) {
-      if (column.getTable() != null && column.getTable().getName() != null)
-        throw new IllegalArgumentException("Qualified SQL columns are unsupported");
+      if (column.getArrayConstructor() != null
+          || column.getCommentText() != null
+          || (column.getTable() != null && column.getTable().getName() != null))
+        throw new IllegalArgumentException("Qualified or decorated SQL columns are unsupported");
       String name = column.getColumnName();
       DataType type = fields.get(name);
       if (type != null) {

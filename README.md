@@ -29,8 +29,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a6 | Bounded SQL string functions | Merged; reactor verified in PR #16 |
 | 7a7 | Bounded SQL integer expressions | Merged by request; supplemental checks only |
 | 7a8 | Signed integer literals for sql-long | Merged by request; supplemental checks only |
-| 7a9 | Plain string and NULL literals for sql-string | Draft; supplemental checks only |
-| 7a10+ | Broader expressions, advanced transforms, connectors | ⬜ |
+| 7a9 | Plain string and NULL literals for sql-string | Merged by request; supplemental checks only |
+| 7a10 | Bounded SQL IN and BETWEEN filters | Draft; supplemental checks only |
+| 7a11+ | Advanced transforms, broader expressions, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -317,3 +318,24 @@ The example emits `[10,"USER-ROW-10"]` and `[11,"USER-ROW-11"]`. No new plugin/o
 dependencies; existing schema/lifecycle/size bounds apply. See [contracts](docs/SLICE-7A9.md).
 Local parser/engine checks and six real LocalRunner examples passed. New Maven/JUnit,
 packaged CLI and full reactor gates remain unrun. No Actions started.
+
+## SQL IN and BETWEEN filters (Slice 7a10)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-predicates-console.conf --mode local
+```
+
+`sql-filter` now supports `id IN (12, 14)` / `NOT IN` and
+`id BETWEEN 11 AND 14` / `NOT BETWEEN`, in addition to its existing predicates.
+The example combines both and emits `[12,"row-12"]` and `[14,"row-14"]`.
+
+IN requires a flat parenthesized list of 1..64 existing supported scalars (including
+schema fields, duplicates and NULL). BETWEEN is inclusive; scalar bounds may be fields.
+HSQLDB owns all membership/range/NULL/negation semantics: for example, a nonmatching
+`NOT IN (1, NULL)` is UNKNOWN, so the filter drops the row. Reversed endpoints are not
+reordered in Java. Subqueries, tuples, functions/arithmetic, GLOBAL/Oracle decorations
+and SYMMETRIC syntax reject before opening. Existing schema/binding/AST/lifecycle
+bounds apply, with list containers/items counted. [Contracts](docs/SLICE-7A10.md).
+
+Local parser/JDBC checks and seven actual LocalRunner SQL examples passed. New JUnit,
+packaged CLI and full-reactor verification remain unrun. No Actions started.

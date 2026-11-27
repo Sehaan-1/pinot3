@@ -200,3 +200,15 @@ No new plugin/dependency/API/engine changes. [Specification](SLICE-7A9.md).
 30 literal assertions +124 regressions (57 string/filter,37 integer,30 integer literal)
 and six actual LocalRunner SQL examples passed. New JUnit/CLI/full Maven gates remain
 unrun. Zero Actions, [skip ci] draft; no automatic merge or expanded dialect permission.
+
+
+### Slice 7a10: bounded IN and BETWEEN predicates
+
+PR19 /7a9 explicitly merged with supplemental evidence only. 7a10 extends sql-filter
+with flat scalar IN/NOT IN lists (1..64) and BETWEEN/NOT BETWEEN. Reuse existing pinned
+JSqlParser/HSQLDB and JDBC adapter, no new dependencies/plugin/API/engine coupling.
+AST validates structure/identifiers; engine owns membership/range/NULL/negation behavior.
+Reject subqueries/tuples/decorations, count list/sign nodes, normalize lexer errors.
+[Specification](SLICE-7A10.md). 47 new assertions +154 regressions and seven actual
+LocalRunner SQL examples passed. New JUnit/packaged CLI/full Maven gates remain unrun.
+Zero Actions, [skip ci] draft; no automatic merge or broader SQL scope authorization.
