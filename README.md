@@ -21,8 +21,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 6b | Embedded Master/Worker and bounded remote tasks | ✅ Merged |
 | 6c | Replicated checkpoint decisions, split state and explicit recovery | ✅ Merged |
 | 6d | Installed job submission REST + HTTP cluster client | ✅ Merged by request; final gates unverified |
-| 7a1 | Field rename/copy + ordered local transform chains | In progress |
-| 7a2+ | Remaining transforms, optional translation, one connector per PR | ⬜ |
+| 7a1 | Field rename/copy + ordered local transform chains | ✅ Merged; full reactor run timed out |
+| 7a2 | Literal string replace/split | Draft; local checks only |
+| 7a3+ | SQL/filter, JSON-path, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -131,4 +132,21 @@ the prior stage's schema; the sink receives the final schema. At most 32 stages,
 128 mappings per field transform. Names are case-sensitive; collisions and unknown
 fields fail before source reading. Copies are shallow, matching `SeaTunnelRow`.
 This remains bounded local execution, not distributed connector ETL. SQL/filter,
-replace/split/JSON-path and advanced transforms are deferred; see `docs/SLICE-7A1.md`.
+JSON-path and advanced transforms are deferred; see `docs/SLICE-7A1.md`.
+
+## Literal string transforms (Slice 7a2)
+
+```sh
+java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar \
+  --config examples/fake-replace-split-console.conf --mode local
+```
+
+`string-replace` uses `field`, `search`, `replacement`: all literal strings, not
+regex. `string-split` uses `field`, `separator`, `fields=[newA,newB]`: append nullable
+STRING columns, splitting at most N-1 times for N output names. The last field
+retains the remainder, trailing empty strings stay empty, missing tokens become
+null. Null source values yield null outputs. Input field must have STRING type;
+new fields cannot collide. The example emits `[10,"row|10","row","10"]` and
+`[11,"row|11","row","11"]`. See `docs/SLICE-7A2.md` for lifecycle and bounds.
+This slice has local smoke checks only; Maven/CI gates remain unrun due to the
+project-wide Actions reservation limit. Do not infer merge readiness.

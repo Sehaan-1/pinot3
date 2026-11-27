@@ -165,4 +165,27 @@ class PipelineIT {
     assertThat(result.output()).isEmpty();
     assertThat(result.errors()).contains("Unknown source field");
   }
+
+  @Test
+  void packagedPipelineReplacesThenSplitsWithLiteralDelimiter() throws Exception {
+    Result result =
+        run(
+            "source { plugin=fake, options { rows=2, start=10 } }\nsink.plugin=console\n"
+                + "transforms=[{plugin=string-replace,options={field=name,search=\"-\",replacement=\"|\"}},"
+                + "{plugin=string-split,options={field=name,separator=\"|\",fields=[prefix,number]}}]");
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[10,\"row|10\",\"row\",\"10\"]", "[11,\"row|11\",\"row\",\"11\"]");
+  }
+
+  @Test
+  void invalidStringTransformTypeFailsBeforeSourceReading() throws Exception {
+    Result result =
+        run(
+            "source.plugin=fake\nsink.plugin=console\n"
+                + "transforms=[{plugin=string-replace,options={field=id,search=a,replacement=b}}]");
+    assertThat(result.code()).isEqualTo(1);
+    assertThat(result.output()).isEmpty();
+    assertThat(result.errors()).contains("STRING type");
+  }
 }
