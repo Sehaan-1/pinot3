@@ -99,6 +99,8 @@
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.6</logback.version>
         <typesafe-config.version>1.4.3</typesafe-config.version>
+        <jsonpath.version>2.9.0</jsonpath.version>
+        <json-smart.version>2.5.2</json-smart.version>
         <jackson.version>2.17.1</jackson.version>
 
         <!-- Formats (Slice 4) -->
@@ -240,6 +242,23 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
                 <version>${jetty.version}</version>
+            </dependency>
+
+            <!-- Jayway also uses json-smart internally for expression literals. -->
+            <dependency>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>${jsonpath.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>accessors-smart</artifactId>
+                <version>${json-smart.version}</version>
             </dependency>
 
             <!-- Testing -->

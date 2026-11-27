@@ -113,7 +113,8 @@ class FieldTransformsTest {
   void discoversRealProviders() throws Exception {
     try (var plugins = PluginDiscovery.fromClasspath(TransformPlugin.class)) {
       assertThat(plugins.identifiers())
-          .containsExactly("field-copy", "field-rename", "string-replace", "string-split");
+          .containsExactly(
+              "field-copy", "field-rename", "json-path", "string-replace", "string-split");
       try (var transform =
           plugins
               .get("field-copy")
