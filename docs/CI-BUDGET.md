@@ -157,3 +157,10 @@ PR20 /Slice7a10 explicitly merged on request. Slice7a11 starts zero Actions and 
 [skip ci] draft. Reserved25m/observed14m45s unchanged; spent one-time grants confer no
 further workflow-dispatch/rerun permission or fresh allowance. Prior032f66f successful
 run doesn't verify subsequent7a7–7a11 changes. No automatic merge.
+
+
+PR21 /7a11 explicitly merged. The user authorized the **full remaining Stage7 scope**,
+not additional Actions or automatic merges. The Stage7 planning checkpoint launches
+zero Actions and uses [skip ci]. Reserved25m/observed14m45s unchanged; both scoped
+exceptions spent. External-service verification is blocked/unrun where Docker/services/
+Maven access are unavailable; no mocked/source-built substitute is a real connector pass.

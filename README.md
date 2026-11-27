@@ -31,8 +31,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a8 | Signed integer literals for sql-long | Merged by request; supplemental checks only |
 | 7a9 | Plain string and NULL literals for sql-string | Merged by request; supplemental checks only |
 | 7a10 | Bounded SQL IN and BETWEEN filters | Merged by request; supplemental checks only |
-| 7a11 | Bounded SQL LIKE and ESCAPE filters | Draft; supplemental checks only |
-| 7a12+ | Advanced transforms, broader expressions, connectors | ⬜ |
+| 7a11 | Bounded SQL LIKE and ESCAPE filters | Merged by request; supplemental checks only |
+| 7b, 7d–7k | Remaining advanced transforms and connectors | Scope authorized; implementation outstanding |
+| 7c | Spark/Flink translation | Optional; deferred |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -364,3 +365,17 @@ See [contracts and probe](docs/SLICE-7A11.md).
 
 Local parser/JDBC assertions and eight real LocalRunner examples passed; new Maven/
 JUnit, packaged CLI and full reactor verification remain unrun. No Actions started.
+
+## Remaining Stage 7
+
+The full remaining Stage7 scope is authorized: advanced transforms, JDBC, Kafka,
+files, Redis, MongoDB, HTTP, CDC, S3, GCS and Azure connectors. See the authoritative
+[completion program](docs/STAGE-7-COMPLETION.md) for dependency order, runtime blockers,
+SDK/license choices and real-service verification gates. Optional Spark/Flink translation
+stays deferred. The plan does **not** mean these connectors are implemented.
+
+Existing SQL transform work is feature-frozen rather than endlessly subdivided. The
+remaining work uses cohesive deliverables/PRs, with prerequisite row-kind/multi-input/
+streaming/transaction-runtime contracts where needed. Current local runner is bounded
+and non-transactional; those capabilities must not be advertised as already available.
+Both prior one-time Actions grants are spent; no new CI starts without permission.
