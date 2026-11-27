@@ -1,0 +1,2 @@
+org.apache.seatunnel.transform.FieldRenamePlugin
+org.apache.seatunnel.transform.FieldCopyPlugin

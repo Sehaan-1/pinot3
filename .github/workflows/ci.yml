@@ -30,8 +30,8 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Test engine planning contracts
-        run: ./mvnw -pl seatunnel-engine -am test 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
+      - name: Test field transforms and local chain contracts
+        run: ./mvnw -pl seatunnel-transforms-v2,seatunnel-core -am test 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
 
       - name: Verify engine cluster and task execution
         run: ./mvnw -pl seatunnel-engine -am verify 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
@@ -44,6 +44,9 @@ jobs:
 
       - name: Run documented local example
         run: java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar --config examples/fake-to-console.conf --mode local
+
+      - name: Run documented transform example
+        run: java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar --config examples/fake-rename-copy-console.conf --mode local
 
       - name: Build, test, and verify (Spotless + license + JaCoCo)
         run: ./mvnw -B -ntp verify 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"

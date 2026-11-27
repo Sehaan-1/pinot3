@@ -63,4 +63,35 @@ class JobConfigTest {
     assertThatThrownBy(() -> config.sourceOptions().clear())
         .isInstanceOf(UnsupportedOperationException.class);
   }
+
+  @Test
+  void orderedTransformsAreOptionalBoundedAndStrictlyShaped() {
+    assertThat(new JobConfig("fake", Map.of(), "console", Map.of()).transforms()).isEmpty();
+    var parsed =
+        JobConfig.parse(
+            Config.parseString(
+                "source.plugin=fake\nsink.plugin=console\n"
+                    + "transforms=[{plugin=field-rename,options.fields={id=event_id}},{plugin=field-copy,options.fields={copy=event_id}}]"));
+    assertThat(parsed.transforms())
+        .extracting(JobConfig.TransformConfig::plugin)
+        .containsExactly("field-rename", "field-copy");
+    for (String invalid :
+        java.util.List.of("null", "{}", "[{plugin=x,unknown=true}]", "[{options={}}]"))
+      assertThatThrownBy(
+              () ->
+                  JobConfig.parse(
+                      Config.parseString(
+                          "source.plugin=fake\nsink.plugin=console\ntransforms=" + invalid)))
+          .isInstanceOf(ConfigException.class);
+    String tooMany =
+        java.util.stream.IntStream.range(0, 33)
+            .mapToObj(i -> "{plugin=field-copy}")
+            .collect(java.util.stream.Collectors.joining(",", "[", "]"));
+    assertThatThrownBy(
+            () ->
+                JobConfig.parse(
+                    Config.parseString(
+                        "source.plugin=fake\nsink.plugin=console\ntransforms=" + tooMany)))
+        .isInstanceOf(ConfigException.class);
+  }
 }

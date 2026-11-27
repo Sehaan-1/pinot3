@@ -33,18 +33,27 @@ import org.apache.seatunnel.plugin.PluginContext;
 import org.apache.seatunnel.plugin.PluginDiscovery;
 import org.apache.seatunnel.plugin.SinkPlugin;
 import org.apache.seatunnel.plugin.SourcePlugin;
+import org.apache.seatunnel.plugin.TransformPlugin;
 
 /** Bounded, single-threaded execution only; no scheduling or checkpoint coordinator. */
 public final class LocalRunner {
   public long run(JobConfig config, Writer output) throws Exception {
     try (var sources = PluginDiscovery.fromClasspath(SourcePlugin.class);
-        var sinks = PluginDiscovery.fromClasspath(SinkPlugin.class)) {
+        var sinks = PluginDiscovery.fromClasspath(SinkPlugin.class);
+        var transforms = PluginDiscovery.fromClasspath(TransformPlugin.class);
+        var chain = new TransformChain()) {
       var source = sources.get(config.sourceId()).createSource(config.sourceOptions());
+      var table = source.producedTable();
+      for (var entry : config.transforms()) {
+        var transform = transforms.get(entry.plugin()).createTransform(entry.options(), table);
+        chain.add(transform);
+        table = transform.producedTable();
+      }
       var sink =
           sinks
               .get(config.sinkId())
-              .createSink(config.sinkOptions(), source.producedTable(), new PluginContext(output));
-      return execute(source, sink);
+              .createSink(config.sinkOptions(), table, new PluginContext(output));
+      return execute(source, sink, chain);
     }
   }
 
@@ -56,6 +65,19 @@ public final class LocalRunner {
           W extends CheckpointState,
           T extends Serializable>
       long execute(SeaTunnelSource<S, R, E> source, SeaTunnelSink<W, T> sink) throws Exception {
+    try (var chain = new TransformChain()) {
+      return execute(source, sink, chain);
+    }
+  }
+
+  private <
+          S extends SourceSplit,
+          R extends CheckpointState,
+          E extends CheckpointState,
+          W extends CheckpointState,
+          T extends Serializable>
+      long execute(SeaTunnelSource<S, R, E> source, SeaTunnelSink<W, T> sink, TransformChain chain)
+          throws Exception {
     if (source.boundedness() != Boundedness.BOUNDED) {
       throw new IllegalArgumentException("Local baseline requires a bounded source");
     }
@@ -93,6 +115,7 @@ public final class LocalRunner {
             };
         try (SplitEnumerator<S, E> enumerator =
             source.createEnumerator(context, Optional.empty())) {
+          chain.open();
           reader.start();
           enumerator.start();
           enumerator.registerReader(0);
@@ -109,8 +132,12 @@ public final class LocalRunner {
                         throw new IllegalArgumentException(
                             "Source row does not match declared arity");
                       }
-                      writer.write(row);
-                      count[0]++;
+                      chain.emit(
+                          row,
+                          transformed -> {
+                            writer.write(transformed);
+                            count[0]++;
+                          });
                     });
             if (status == SourceReader.ReadStatus.END_OF_INPUT) {
               writer.flush(true);

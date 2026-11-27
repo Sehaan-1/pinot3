@@ -16,6 +16,8 @@
  */
 package org.apache.seatunnel.core;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -27,12 +29,30 @@ public record JobConfig(
     String sourceId,
     Map<String, Object> sourceOptions,
     String sinkId,
-    Map<String, Object> sinkOptions) {
+    Map<String, Object> sinkOptions,
+    List<TransformConfig> transforms) {
   public JobConfig {
     validateId(sourceId);
     validateId(sinkId);
     sourceOptions = Map.copyOf(sourceOptions);
     sinkOptions = Map.copyOf(sinkOptions);
+    transforms = List.copyOf(transforms);
+    if (transforms.size() > 32) throw new ConfigException("At most 32 transforms supported");
+  }
+
+  public JobConfig(
+      String sourceId,
+      Map<String, Object> sourceOptions,
+      String sinkId,
+      Map<String, Object> sinkOptions) {
+    this(sourceId, sourceOptions, sinkId, sinkOptions, List.of());
+  }
+
+  public record TransformConfig(String plugin, Map<String, Object> options) {
+    public TransformConfig {
+      validateId(plugin);
+      options = Map.copyOf(options);
+    }
   }
 
   private static void validateId(String id) {
@@ -44,7 +64,7 @@ public record JobConfig(
   public static JobConfig parse(Config input) {
     try {
       Config config = Config.of(input.unwrap().resolve());
-      allowed(config, Set.of("env", "source", "sink"));
+      allowed(config, Set.of("env", "source", "sink", "transforms"));
       config.requireKeys("source", "sink");
       if (config.unwrap().hasPathOrNull("env")) {
         Config env = config.getConfig("env");
@@ -57,8 +77,21 @@ public record JobConfig(
       Config sink = config.getConfig("sink");
       allowed(source, Set.of("plugin", "options"));
       allowed(sink, Set.of("plugin", "options"));
+      List<TransformConfig> transforms = new ArrayList<>();
+      if (config.unwrap().hasPathOrNull("transforms")) {
+        for (var raw : config.unwrap().getConfigList("transforms")) {
+          if (transforms.size() == 32) throw new ConfigException("At most 32 transforms supported");
+          Config transform = Config.of(raw);
+          allowed(transform, Set.of("plugin", "options"));
+          transforms.add(new TransformConfig(transform.getString("plugin"), options(transform)));
+        }
+      }
       return new JobConfig(
-          source.getString("plugin"), options(source), sink.getString("plugin"), options(sink));
+          source.getString("plugin"),
+          options(source),
+          sink.getString("plugin"),
+          options(sink),
+          transforms);
     } catch (com.typesafe.config.ConfigException failure) {
       throw new ConfigException("Invalid or unresolved job configuration", failure);
     }

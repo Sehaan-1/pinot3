@@ -8,7 +8,7 @@ this limit; do not treat it as a fresh budget on later turns/slices.
 |---|---:|---|
 | Slice 6d bootstrap/verification | 5 | Run 45954320178 failed during formatting; 13s observed, full 5m charged to ledger |
 | Slice 6d final check-only verification | 5 | Run 45954790986 failed at engine Spotless; 2m23s observed, full 5m charged to ledger |
-| Future project work | 5 | Unallocated; requires checking this ledger first |
+| Slice 7a1 final verification | 5 | Reserved for one run after local checks; no reruns |
 
 Two runs maximum for 6d. A failed/cancelled/timed-out run still uses its full
 reservation conservatively. Record actual observed duration in the PR, but do not
@@ -17,14 +17,17 @@ PR checks only (no duplicate main push check); each job is capped at five minute
 This ledger is an operational policy, not an account-wide GitHub billing limiter:
 other branches/manual runs also consume minutes and must be accounted for before use.
 
-## Current handoff
+## Current handoff (Slice 7a1)
 
-Two runner jobs used: 13s + 2m23s = **2m36s observed**, not a billing statement.
-Conservatively **10 minutes reserved/consumed, 5 minutes remaining** under the
-15-minute ceiling. Stop: do not automatically spend that remainder on this PR.
-The second run passed engine compilation/unit tests but engine `verify` stopped
-on import-order formatting. Those imports are fixed in a `[skip ci]` commit;
-that commit is intentionally **not verified** and the PR remains draft.
-CLI verification, documented example and full reactor gates were skipped by the
-failed engine step. A future explicitly budgeted verification is needed before
-review/merge readiness. See PR #9 for run links and the verified head SHA.
+Slice 6d used two runner jobs: 13s + 2m23s = **2m36s observed**, not a billing
+statement. Its final import-only fix was merged as PR #9 by explicit user request
+without further checking. Engine compilation/unit tests passed on the previous
+head; CLI verification and full reactor verification were not claimed passing.
+
+Conservatively **10 minutes consumed + 5 minutes reserved for Slice 7a1 = all 15
+minutes allocated**. The next PR may launch exactly one five-minute job, after
+local checks. That job also exercises the previously unverified 6d code. Stop after
+it succeeds/fails/times out: no reruns, no additional CI-triggering pushes, and no
+fresh budget on later sessions. Record outcome in the PR (avoid a documentation-only
+commit triggering a new run). Future Actions work requires additional user budget.
+A failed run leaves a draft PR, not permission to bypass verification.

@@ -20,8 +20,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 6a | `seatunnel-engine`: logical DAG + physical task planning | ✅ Merged |
 | 6b | Embedded Master/Worker and bounded remote tasks | ✅ Merged |
 | 6c | Replicated checkpoint decisions, split state and explicit recovery | ✅ Merged |
-| 6d | Installed job submission REST + HTTP cluster client | Draft PR #9 — final verification pending |
-| 7+ | Transforms, translation (optional), one connector per PR + Testcontainers E2E | ⬜ |
+| 6d | Installed job submission REST + HTTP cluster client | ✅ Merged by request; final gates unverified |
+| 7a1 | Field rename/copy + ordered local transform chains | In progress |
+| 7a2+ | Remaining transforms, optional translation, one connector per PR | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -115,3 +116,19 @@ status to observe failures/cancel siblings. Delete terminal records to release
 retention capacity. Do not blindly retry an uncertain POST. Private trusted
 networks only: this baseline has no TLS/authentication. See `docs/SLICE-6D.md`.
 Actions usage is constrained project-wide; consult `docs/CI-BUDGET.md` before pushing.
+
+## Local field transforms (Slice 7a1)
+
+```sh
+java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar \
+  --config examples/fake-rename-copy-console.conf --mode local
+```
+
+The example emits `[10,"row-10",10]` and `[11,"row-11",11]`. The optional ordered
+`transforms` list applies `field-rename` (`fields={old=new}`) then `field-copy`
+(`fields={new=existing}`). Copy targets append in lexical order. Stages receive
+the prior stage's schema; the sink receives the final schema. At most 32 stages,
+128 mappings per field transform. Names are case-sensitive; collisions and unknown
+fields fail before source reading. Copies are shallow, matching `SeaTunnelRow`.
+This remains bounded local execution, not distributed connector ETL. SQL/filter,
+replace/split/JSON-path and advanced transforms are deferred; see `docs/SLICE-7A1.md`.
