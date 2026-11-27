@@ -1,2 +1,4 @@
 org.apache.seatunnel.transform.FieldRenamePlugin
 org.apache.seatunnel.transform.FieldCopyPlugin
+org.apache.seatunnel.transform.StringReplacePlugin
+org.apache.seatunnel.transform.StringSplitPlugin

@@ -8,7 +8,7 @@ this limit; do not treat it as a fresh budget on later turns/slices.
 |---|---:|---|
 | Slice 6d bootstrap/verification | 5 | Run 45954320178 failed during formatting; 13s observed, full 5m charged to ledger |
 | Slice 6d final check-only verification | 5 | Run 45954790986 failed at engine Spotless; 2m23s observed, full 5m charged to ledger |
-| Slice 7a1 final verification | 5 | Reserved for one run after local checks; no reruns |
+| Slice 7a1 final verification | 5 | Run 45956999888 hit 5m timeout; 5m13s observed including cleanup |
 
 Two runs maximum for 6d. A failed/cancelled/timed-out run still uses its full
 reservation conservatively. Record actual observed duration in the PR, but do not
@@ -17,17 +17,19 @@ PR checks only (no duplicate main push check); each job is capped at five minute
 This ledger is an operational policy, not an account-wide GitHub billing limiter:
 other branches/manual runs also consume minutes and must be accounted for before use.
 
-## Current handoff (Slice 7a1)
+## Current handoff (Slice 7a2)
 
-Slice 6d used two runner jobs: 13s + 2m23s = **2m36s observed**, not a billing
-statement. Its final import-only fix was merged as PR #9 by explicit user request
-without further checking. Engine compilation/unit tests passed on the previous
-head; CLI verification and full reactor verification were not claimed passing.
+Three jobs since the user's authorization: 13s + 2m23s + 5m13s = **7m49s observed**,
+not a billing statement. All **15 conservative reservation minutes are allocated**;
+the final job's 13-second timeout cleanup overhead is noted explicitly. Do not infer
+new minutes from a session reset or reclaim the reservation without user reconciliation.
 
-Conservatively **10 minutes consumed + 5 minutes reserved for Slice 7a1 = all 15
-minutes allocated**. The next PR may launch exactly one five-minute job, after
-local checks. That job also exercises the previously unverified 6d code. Stop after
-it succeeds/fails/times out: no reruns, no additional CI-triggering pushes, and no
-fresh budget on later sessions. Record outcome in the PR (avoid a documentation-only
-commit triggering a new run). Future Actions work requires additional user budget.
-A failed run leaves a draft PR, not permission to bypass verification.
+PR #10 was explicitly merged after its affected transform/core/engine/CLI gates and
+both examples passed, but full reactor verify timed out. PR #9's previously unverified
+engine/CLI paths were exercised by that #10 run. No full reactor success is claimed.
+
+**Slice 7a2 launches zero Actions jobs.** Its commits use `[skip ci]` and its PR remains
+draft, with local compilation/smoke checks only. No workflow-dispatch, rerun, additional
+CI-triggering push or duplicate main build. Future CI requires explicit additional
+allocation/reconciliation with the user. Prior exceptions permitting unverified merges
+are scoped to those requests, not blanket future merge authorization.
