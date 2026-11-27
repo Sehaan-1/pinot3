@@ -151,3 +151,11 @@ Maven gates remain UNRUN. Slice7e0 streaming/checkpoint bridge is implemented wi
 local protocol/real Fake-Console evidence, but real Hazelcast/Maven/unbounded-connector
 acceptance still unrun. Next: Kafka integration against these contracts with all JDBC/
 runtime verification gaps carried forward. No mandatory row above is fully complete/verified yet.
+
+### Slice7e1 implementation (not service acceptance)
+
+Kafka official-client raw-byte bounded/live source and acknowledged INSERT sink, explicit
+ranges/offset restore, CLI wiring/examples and service/packaging tests implemented together.
+108 deterministic port assertions and live serialized checkpoint bridge PASS. Production
+KafkaSdk/pinned dependencies/Maven/broker/packaged CLI gates uncompiled/unrun; no Actions.
+Kafka, streaming, Stage7 remain unchecked. See [Kafka guide](KAFKA.md).

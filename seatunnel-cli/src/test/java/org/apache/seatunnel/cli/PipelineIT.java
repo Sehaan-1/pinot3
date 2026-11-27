@@ -74,6 +74,95 @@ class PipelineIT {
   }
 
   @Test
+  @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(
+      named = "PINOT_KAFKA_BOOTSTRAP",
+      matches = ".+")
+  void packagedKafkaCopyUsesInstalledClientsAndProviders() throws Exception {
+    String brokers = System.getenv("PINOT_KAFKA_BOOTSTRAP");
+    var properties = new java.util.Properties();
+    properties.put("bootstrap.servers", brokers);
+    properties.put("default.api.timeout.ms", "10000");
+    properties.put("request.timeout.ms", "5000");
+    String input = "cli-in-" + java.util.UUID.randomUUID(),
+        output = "cli-out-" + java.util.UUID.randomUUID();
+    try (var admin = org.apache.kafka.clients.admin.Admin.create(properties)) {
+      admin
+          .createTopics(
+              List.of(
+                  new org.apache.kafka.clients.admin.NewTopic(input, 1, (short) 1),
+                  new org.apache.kafka.clients.admin.NewTopic(output, 1, (short) 1)))
+          .all()
+          .get(30, TimeUnit.SECONDS);
+      try {
+        var producerProperties = new java.util.Properties();
+        producerProperties.putAll(properties);
+        producerProperties.put(
+            "key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+        producerProperties.put(
+            "value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+        producerProperties.put("delivery.timeout.ms", 10000);
+        try (var producer =
+            new org.apache.kafka.clients.producer.KafkaProducer<byte[], byte[]>(
+                producerProperties)) {
+          producer
+              .send(
+                  new org.apache.kafka.clients.producer.ProducerRecord<byte[], byte[]>(
+                      input, 0, null, new byte[] {1}))
+              .get(15, TimeUnit.SECONDS);
+          producer
+              .send(
+                  new org.apache.kafka.clients.producer.ProducerRecord<byte[], byte[]>(
+                      input, 0, null, null))
+              .get(15, TimeUnit.SECONDS);
+        }
+        String servers =
+            com.typesafe.config.ConfigValueFactory.fromIterable(List.of(brokers.split(",")))
+                .render(com.typesafe.config.ConfigRenderOptions.concise());
+        String common = "bootstrap-servers=" + servers + "\nsecurity-protocol=PLAINTEXT\n";
+        String read =
+            "group-id=cli-test-"
+                + java.util.UUID.randomUUID()
+                + "\nmode=bounded\npartitions=[{partition=0,start-offset=0,end-offset=2}]\n";
+        Result copied =
+            run(
+                "source {plugin=kafka,options {\n"
+                    + common
+                    + "topic="
+                    + input
+                    + "\n"
+                    + read
+                    + "}}\nsink {plugin=kafka,options {\n"
+                    + common
+                    + "topic="
+                    + output
+                    + "\n}}");
+        assertThat(copied.code()).as(copied.errors()).isZero();
+        assertThat(copied.output()).isEmpty();
+        Result result =
+            run(
+                "source {plugin=kafka,options {\n"
+                    + common
+                    + "topic="
+                    + output
+                    + "\n"
+                    + read
+                    + "}}\nsink.plugin=console");
+        assertThat(result.code()).as(result.errors()).isZero();
+        assertThat(result.output().lines().toList()).hasSize(2);
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var values = new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+        for (String line : result.output().lines().toList())
+          values.add(mapper.readTree(line).get(4));
+        assertThat(values.stream().filter(com.fasterxml.jackson.databind.JsonNode::isNull).count())
+            .isEqualTo(1);
+        assertThat(values.stream().filter(n -> "AQ==".equals(n.asText())).count()).isEqualTo(1);
+      } finally {
+        admin.deleteTopics(List.of(input, output)).all().get(30, TimeUnit.SECONDS);
+      }
+    }
+  }
+
+  @Test
   void defaultExecutableNeverBundlesMysqlDriverEvenWithTestProfile() throws Exception {
     try (var jar =
         new java.util.jar.JarFile(Path.of("target", "seatunnel-cli-3.0.0-SNAPSHOT.jar").toFile())) {

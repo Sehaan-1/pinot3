@@ -53,7 +53,8 @@ class LoggingIT {
       assertThat(process.exitValue()).as(Files.readString(stderr)).isZero();
       assertThat(Files.readString(stdout)).isEqualTo("[1]\n");
       assertThat(Files.readString(stderr)).contains("CLI_LOGGING_REGRESSION_PROBE");
-      assertThat(Files.readString(stderr)).doesNotContain("JDBC_PRIVATE_DRIVER_DETAILS");
+      assertThat(Files.readString(stderr))
+          .doesNotContain("JDBC_PRIVATE_DRIVER_DETAILS", "KAFKA_PRIVATE_CLIENT_DETAILS");
     } finally {
       if (process.isAlive()) process.destroyForcibly().waitFor();
     }
@@ -65,6 +66,8 @@ class LoggingIT {
       LoggerFactory.getLogger(Probe.class).warn("CLI_LOGGING_REGRESSION_PROBE");
       LoggerFactory.getLogger("com.zaxxer.hikari.pool.HikariPool")
           .warn("JDBC_PRIVATE_DRIVER_DETAILS");
+      LoggerFactory.getLogger("org.apache.kafka.clients.NetworkClient")
+          .warn("KAFKA_PRIVATE_CLIENT_DETAILS");
       System.out.print("[1]\n");
     }
   }
