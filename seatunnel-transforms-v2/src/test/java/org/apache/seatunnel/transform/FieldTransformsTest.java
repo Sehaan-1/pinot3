@@ -117,6 +117,7 @@ class FieldTransformsTest {
               "field-copy",
               "field-rename",
               "json-path",
+              "row-kind-extractor",
               "sql-filter",
               "sql-long",
               "sql-project",

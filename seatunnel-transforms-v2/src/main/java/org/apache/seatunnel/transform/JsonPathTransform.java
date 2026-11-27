@@ -102,7 +102,7 @@ public final class JsonPathTransform implements SeaTunnelTransform {
       throw new IllegalArgumentException("Expected String JSON field value");
     Object[] values = java.util.Arrays.copyOf(row.getFields(), arity + 1);
     if (cell != null) values[arity] = extract((String) cell);
-    return List.of(new SeaTunnelRow(values));
+    return List.of(row.withFields(values));
   }
 
   private String extract(String input) {

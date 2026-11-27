@@ -59,7 +59,7 @@ final class SqlAppendTransform implements SeaTunnelTransform {
     Object value = query.evaluate(row, reader);
     Object[] fields = Arrays.copyOf(row.getFields(), output.columns().size());
     fields[fields.length - 1] = value;
-    return List.of(new SeaTunnelRow(fields));
+    return List.of(row.withFields(fields));
   }
 
   public void close() throws SQLException {

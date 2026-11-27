@@ -164,3 +164,10 @@ not additional Actions or automatic merges. The Stage7 planning checkpoint launc
 zero Actions and uses [skip ci]. Reserved25m/observed14m45s unchanged; both scoped
 exceptions spent. External-service verification is blocked/unrun where Docker/services/
 Maven access are unavailable; no mocked/source-built substitute is a real connector pass.
+
+
+Stage7 planning PR22 merged explicitly. Slice7b1 starts zero Actions; [skip ci] head.
+User explicitly authorized the next implementation PR's merge in "merge then next
+then merge". This scopes an unverified-merge exception to7b1, not subsequent Stage7
+PRs or CI. Reserved25m/observed14m45s unchanged, both one-time Actions grants spent.
+New API/transform Maven/JUnit/packaged CLI gates remain unrun despite local evidence.
