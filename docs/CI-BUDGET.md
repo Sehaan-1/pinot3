@@ -56,3 +56,20 @@ PR #14 / Slice 7a5 explicitly merged on request. Its override was not blanket me
 permission. Slice 7a6 launches zero Actions and uses a [skip ci] draft head. The
 15-minute conservative reservation remains fully allocated; prior observed 7m49s
 is unchanged, not billing evidence or reclaimable CI time. Maven gates stay pending.
+
+
+## One-time verification authorization after Slice 7a6
+
+The user explicitly authorized Actions "just for this once" to execute the previously
+unrun tests. Reserve **one additional job, maximum 5 runner minutes**, for a single
+PR-triggered verification of merged slices through 7a6. Conservative reservations
+now total **20 minutes**; this is a scoped exception to the prior exhausted 15-minute
+ledger, not recurring permission. Do not rerun or dispatch another job automatically.
+Existing observed 7m49s remains historical; append this run's actual outcome separately.
+
+Use one `./mvnw -B -ntp verify` reactor invocation (JUnit, packaged CLI Failsafe E2E,
+Spotless, license and dependency convergence), replacing repeated overlapping builds
+that previously exhausted the timeout. Existing PR-only triggers and five-minute cap
+remain unchanged; no push/main/scheduled/manual trigger is enabled. Open a verification
+PR without [skip ci] exactly once, then use [skip ci] for any follow-up record/fixes.
+This is verification-only, not authorization to merge that PR or begin another slice.
