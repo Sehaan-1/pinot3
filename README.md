@@ -25,8 +25,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a2 | Literal string replace/split | ✅ Merged by request; local checks only |
 | 7a3 | Jayway JSON-path extraction | Merged by request; supplemental checks only |
 | 7a4 | Library-backed SQL predicate filter | Merged by request; supplemental local checks only |
-| 7a5 | SQL field selection/order/aliases | Draft; supplemental checks only |
-| 7a6+ | Computed SQL projection, advanced transforms, connectors | ⬜ |
+| 7a5 | SQL field selection/order/aliases | Merged by request; supplemental checks only |
+| 7a6 | Bounded SQL string functions | Draft; supplemental checks only |
+| 7a7+ | Broader computed expressions, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -135,7 +136,7 @@ the prior stage's schema; the sink receives the final schema. At most 32 stages,
 128 mappings per field transform. Names are case-sensitive; collisions and unknown
 fields fail before source reading. Copies are shallow, matching `SeaTunnelRow`.
 This remains bounded local execution, not distributed connector ETL. SQL/filter,
-Advanced transforms and computed SQL expressions remain deferred. JSON-path is introduced in 7a3; SQL predicate filtering in 7a4 and field-only SQL projection in 7a5.
+Advanced transforms and general computed SQL projection remain deferred. JSON-path is introduced in 7a3; SQL filtering in 7a4, field projection in 7a5 and bounded SQL string expressions in 7a6.
 
 ## Literal string transforms (Slice 7a2)
 
@@ -221,3 +222,26 @@ preceding `sql-filter`, not in `columns`. See [bounds and contracts](docs/SLICE-
 
 Local source-built parser checks and the real LocalRunner example passed. This is
 supplemental verification, not a pinned Maven build or packaged CLI E2E result.
+
+## SQL string expressions (Slice 7a6)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-string-console.conf --mode local
+```
+
+`sql-string` accepts exactly `expression` and `target`, appending one nullable STRING.
+For example, `expression = "UPPER(name)", target = upper_name`. Supports STRING field
+references plus nested `UPPER(x)`, `LOWER(x)`, `CONCAT(x,y)` and `COALESCE(x,y[, ...])`
+(up to eight COALESCE arguments). HSQLDB owns casing and NULL semantics; this is not a
+promise of vendor-independent SQL behavior. Literals, arithmetic, casts, parameters,
+qualified names and other/decorated functions are intentionally rejected. Use
+`sql-project` afterward to select the computed field and rename/drop originals.
+
+Shares the filter's private JDBC row-query resource lifecycle and strict typed binding.
+Input follows the filter's schema constraints. Inputs and result strings are bounded
+at 1,048,576 UTF-16 units, failing rather than truncating oversized results. Expressions
+are trusted config, not a hostile SQL/CPU sandbox. See [contracts](docs/SLICE-7A6.md).
+The example emits `["ROW-10",10]` and `["ROW-11",11]`.
+
+Local adopted-parser/engine checks and three actual LocalRunner examples passed;
+Maven/JUnit, packaged CLI E2E and full-reactor verification remain unrun. No Actions.

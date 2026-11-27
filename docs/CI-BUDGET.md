@@ -17,7 +17,7 @@ PR checks only (no duplicate main push check); each job is capped at five minute
 This ledger is an operational policy, not an account-wide GitHub billing limiter:
 other branches/manual runs also consume minutes and must be accounted for before use.
 
-## Current handoff (Slice 7a5)
+## Current handoff (Slice 7a6)
 
 Three jobs since the user's authorization: 13s + 2m23s + 5m13s = **7m49s observed**,
 not a billing statement. All **15 conservative reservation minutes are allocated**;
@@ -50,3 +50,9 @@ uses `[skip ci]` and stays draft. All 15 conservative reservation minutes remain
 allocated; 7m49s observed prior runtime is unchanged, not a billing statement.
 Local supplemental compilation/operator/integration checks do not grant CI minutes
 or automatic merge permission.
+
+
+PR #14 / Slice 7a5 explicitly merged on request. Its override was not blanket merge
+permission. Slice 7a6 launches zero Actions and uses a [skip ci] draft head. The
+15-minute conservative reservation remains fully allocated; prior observed 7m49s
+is unchanged, not billing evidence or reclaimable CI time. Maven gates stay pending.
