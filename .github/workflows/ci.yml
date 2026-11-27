@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
@@ -17,7 +15,10 @@ jobs:
   build:
     name: Build & test (JDK 17)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,22 +31,37 @@ jobs:
           cache: maven
 
       - name: Test engine planning contracts
-        run: ./mvnw -pl seatunnel-engine -am test
+        run: ./mvnw -pl seatunnel-engine -am test 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
 
       - name: Verify engine cluster and task execution
-        run: ./mvnw -pl seatunnel-engine -am verify
+        run: ./mvnw -pl seatunnel-engine -am verify 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
 
       - name: Test connectors and local core
-        run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test
+        run: ./mvnw -pl connector-fake,connector-console,seatunnel-core -am test 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
 
       - name: Verify runnable CLI and E2E
-        run: ./mvnw -pl seatunnel-cli -am verify
+        run: ./mvnw -pl seatunnel-cli -am verify 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
 
       - name: Run documented local example
         run: java -jar seatunnel-cli/target/seatunnel-cli-3.0.0-SNAPSHOT.jar --config examples/fake-to-console.conf --mode local
 
       - name: Build, test, and verify (Spotless + license + JaCoCo)
-        run: ./mvnw -B -ntp verify
+        run: ./mvnw -B -ntp verify 2>&1 | tee -a "$RUNNER_TEMP/seatunnel-maven.log"
+
+      - name: Summarize verification failures without a rerun
+        if: failure()
+        run: |
+          python3 - <<'PYCODE'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'seatunnel-maven.log'
+          lines = path.read_text(errors='replace').splitlines() if path.exists() else []
+          errors = [line for line in lines if '[ERROR]' in line or '<<< FAILURE' in line or '<<< ERROR' in line]
+          text = '\n'.join(errors[-60:])[:20000]
+          for index, offset in enumerate(range(0, len(text), 2500)):
+              part = text[offset:offset+2500].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title=Verification {index}::' + part)
+          PYCODE
 
       - name: Upload Surefire reports on failure
         if: failure()
