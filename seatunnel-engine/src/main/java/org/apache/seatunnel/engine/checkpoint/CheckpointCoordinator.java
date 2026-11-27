@@ -24,13 +24,13 @@ import java.util.UUID;
 /** Explicit two-phase orchestration; never invoke concurrently with participant operator work. */
 public final class CheckpointCoordinator {
   private final UUID jobId;
-  private final CheckpointStore store;
+  private final CheckpointRepository store;
   private final Map<String, CheckpointParticipant> participants;
   private long lastAttempt;
   private boolean publicationUncertain;
 
   public CheckpointCoordinator(
-      UUID jobId, CheckpointStore store, Map<String, CheckpointParticipant> participants) {
+      UUID jobId, CheckpointRepository store, Map<String, CheckpointParticipant> participants) {
     this.jobId = Objects.requireNonNull(jobId, "jobId");
     this.store = Objects.requireNonNull(store, "store");
     this.participants = Map.copyOf(participants);

@@ -30,7 +30,12 @@ public interface SinkWriter<C extends CheckpointState, T extends Serializable>
   /** Flushes buffered writes; endOfInput marks the final flush of a bounded input. */
   void flush(boolean endOfInput) throws Exception;
 
-  /** Returns detached commit handles for the checkpoint, after flushing its data. */
+  /**
+   * Returns detached commit handles for the checkpoint, after flushing its data. Transactional
+   * adapters must make these independently recoverable by a fresh committer. Closing a writer must
+   * not invalidate prepared handles in a published or publication-uncertain decision. Abort
+   * notifications must also clean partial preparation when this method throws before returning.
+   */
   List<T> prepareCommit(long checkpointId) throws Exception;
 
   @Override
