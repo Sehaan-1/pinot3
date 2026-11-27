@@ -69,7 +69,7 @@ PR #1  Scaffold (root POM, wrapper, CI)
 | #19 | 7a9 string/NULL literals | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Plain SQL strings and NULL | Merged explicitly; local checks, new Maven gates unrun |
 | #20 | 7a10 IN/BETWEEN | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bounded predicates | Merged explicitly; local checks, new Maven gates unrun |
 | #21 | 7a11 LIKE/ESCAPE | `seatunnel-transforms-v2` | Existing parser/HSQLDB | Bound literal patterns, engine NULL semantics | Merged explicitly; local checks, new Maven gates unrun |
-| Later | 7b Transforms (advanced) | `seatunnel-transforms-v2` | *(none new)* | TableMerge, RowKindExtractor, FilterToken, … | `./mvnw -pl seatunnel-transforms-v2 -am test` |
+| #23–#25 | 7b advanced transforms + multi-input | API, transforms, core, CLI | Existing Guava/JDK/SPI | RowKindExtractor, FilterToken, bounded TableMerge UNION ALL | Implemented with supplemental checks; Maven/JUnit/installed CLI gates unrun |
 | Optional | 7c Translation | `seatunnel-translation-flink`, `seatunnel-translation-spark` | Flink 1.19 / Spark 3.5 (pin at slice start) — **OPTIONAL** | Translation layer (only if Spark/Flink interop is in scope) | Deferred until scope is confirmed |
 | Planned | 7d JDBC | `connector-jdbc` (source + sink) | HikariCP, PostgreSQL/MySQL JDBC drivers, Testcontainers (exact versions/license review at implementation entry) | `JdbcSource`/`JdbcSink` | Testcontainers E2E (real Postgres/MySQL) |
 | Planned | 7e Kafka | `connector-kafka` (source + sink) | `org.apache.kafka:kafka-clients` (pin at implementation entry) | `KafkaSource`/`KafkaSink` | Testcontainers E2E (real Kafka) |
@@ -283,3 +283,17 @@ central version; no new root pin/API/core/engine coupling.
 passed. Guava/Jackson temporary import relinks are not pinned Maven proof. Added JUnit/
 packaged CLI/full reactor remain unrun. Zero Actions; user explicitly authorized next
 implementation then merge for this PR only. TableMerge/runtime/connectors remain pending.
+
+
+### Slice7b3: bounded TableMerge / remaining named 7b implementation
+
+PR24 /7b2 merged explicitly. User requested "next then merge tackle all of 7b now".
+[Specification](SLICE-7B3.md) locks schema-aligned bounded UNION ALL (not relational join).
+Existing core lifecycle and SPI reused: strict source/sources config, 2..32 inputs,
+serial drain, one shared transform chain/writer/final flush, preflight schema checks,
+per-input resource cleanup, no hidden queues/new dependencies/API engine imports.
+207 executable contracts and eleven actual LocalRunner examples passed. Added JUnit/
+installed CLI tests and Maven/full reactor gates remain unrun. Zero Actions. All named
+7b features implemented, not fully verified. Next is JDBC; streaming prerequisites
+still required before unbounded connectors. This merge authorization covers 7b, not
+new CI spend or connector merges.

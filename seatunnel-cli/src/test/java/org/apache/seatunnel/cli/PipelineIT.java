@@ -65,6 +65,20 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineMergesMultipleInputsBeforeSharedTransforms() throws Exception {
+    Result result =
+        run(
+            "sources=[{plugin=fake,options={rows=2,start=10}},{plugin=fake,options.rows=0},{plugin=fake,options={rows=2,start=11}}]\n"
+                + "transforms=[{plugin=filter-token,options={field=name,delimiter=\"-\",tokens=[\"11\",\"12\"],mode=any}},{plugin=row-kind-extractor,options.target=change}]\n"
+                + "sink.plugin=console");
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.errors()).isEmpty();
+    assertThat(result.output().lines().toList())
+        .containsExactly(
+            "[11,\"row-11\",\"+I\"]", "[11,\"row-11\",\"+I\"]", "[12,\"row-12\",\"+I\"]");
+  }
+
+  @Test
   void packagedJarRunsTheRealPipelineWithExactDeterministicRows() throws Exception {
     Result result =
         run(
