@@ -23,8 +23,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 6d | Installed job submission REST + HTTP cluster client | ✅ Merged by request; final gates unverified |
 | 7a1 | Field rename/copy + ordered local transform chains | ✅ Merged; full reactor run timed out |
 | 7a2 | Literal string replace/split | ✅ Merged by request; local checks only |
-| 7a3 | Jayway JSON-path extraction | Draft; supplemental checks only |
-| 7a4+ | SQL/filter, advanced transforms, connectors | ⬜ |
+| 7a3 | Jayway JSON-path extraction | Merged by request; supplemental checks only |
+| 7a4 | Library-backed SQL predicate filter | Draft; supplemental local checks only |
+| 7a5+ | SQL projection, advanced transforms, connectors | ⬜ |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -133,7 +134,7 @@ the prior stage's schema; the sink receives the final schema. At most 32 stages,
 128 mappings per field transform. Names are case-sensitive; collisions and unknown
 fields fail before source reading. Copies are shallow, matching `SeaTunnelRow`.
 This remains bounded local execution, not distributed connector ETL. SQL/filter,
-Advanced transforms and SQL/filter remain deferred. JSON-path is introduced in 7a3.
+Advanced transforms and SQL projection remain deferred. JSON-path is introduced in 7a3; SQL predicate filtering in 7a4.
 
 ## Literal string transforms (Slice 7a2)
 
@@ -170,3 +171,26 @@ rejected. Input limit is 1,048,576 UTF-16 code units; path limit is 4096 charact
 These are parsing bounds, not a CPU sandbox: use trusted query configurations only.
 Jackson providers are per operator; global JsonPath defaults are untouched. See
 `docs/SLICE-7A3.md`. Maven/JUnit/packaged CLI verification is unrun; draft only.
+
+## SQL predicate filtering (Slice 7a4)
+
+```sh
+seatunnel-cli/target/seatunnel-cli/bin/seatunnel --config examples/fake-sql-filter-console.conf --mode local
+```
+
+`sql-filter` takes exactly `condition`, a predicate rather than SELECT text. Example:
+`id >= 12 AND name <> 'row-13'` preserves rows 12 and 14 from the five-row example.
+It preserves schema/row identity and drops SQL FALSE and UNKNOWN. JSqlParser 4.9
+validates an explicit AST allowlist; a private HSQLDB 2.7.4 prepared VALUES-row query
+owns SQL evaluation. Values are JDBC-bound, never interpolated. HSQLDB comparison/
+collation semantics apply. No general SQL execution, projections or stored tables.
+
+Supports AND/OR/NOT, parentheses, comparisons, IS NULL/IS NOT NULL, integer/string/
+NULL/boolean literals and exact-case unqualified field names. BOOLEAN/INT/LONG/STRING
+schemas only; field names must be simple ASCII identifiers (excluding TRUE/FALSE/NULL).
+Functions, casts, arithmetic, subqueries, parameters and qualified names reject before
+opening. SQL type compatibility is checked at open before source reading. Conditions
+are trusted configuration, not a CPU sandbox; see [contracts](docs/SLICE-7A4.md).
+
+Local source-built parser/engine checks are supplemental. Maven/JUnit, packaged CLI
+E2E and full reactor verification remain unrun; no green-build claim or new Actions.

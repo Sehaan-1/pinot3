@@ -3,3 +3,4 @@ org.apache.seatunnel.transform.FieldCopyPlugin
 org.apache.seatunnel.transform.StringReplacePlugin
 org.apache.seatunnel.transform.StringSplitPlugin
 org.apache.seatunnel.transform.JsonPathPlugin
+org.apache.seatunnel.transform.SqlFilterPlugin
