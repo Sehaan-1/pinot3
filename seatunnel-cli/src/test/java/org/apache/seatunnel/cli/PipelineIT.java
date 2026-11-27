@@ -68,7 +68,8 @@ class PipelineIT {
   void packagedJarRunsTheRealPipelineWithExactDeterministicRows() throws Exception {
     Result result =
         run(
-            "env.parallelism=1\nsource { plugin=fake, options { rows=5, start=10, split-size=2 } }\n"
+            "env.parallelism=1\n"
+                + "source { plugin=fake, options { rows=5, start=10, split-size=2 } }\n"
                 + "sink.plugin=console",
             "--mode",
             "local");
@@ -170,7 +171,8 @@ class PipelineIT {
   void packagedPipelineReplacesThenSplitsWithLiteralDelimiter() throws Exception {
     Result result =
         run(
-            "source { plugin=fake, options { rows=2, start=10 } }\nsink.plugin=console\n"
+            "source { plugin=fake, options { rows=2, start=10 } }\n"
+                + "sink.plugin=console\n"
                 + "transforms=[{plugin=string-replace,options={field=name,search=\"-\",replacement=\"|\"}},"
                 + "{plugin=string-split,options={field=name,separator=\"|\",fields=[prefix,number]}}]");
     assertThat(result.code()).as(result.errors()).isZero();
@@ -200,10 +202,20 @@ class PipelineIT {
   }
 
   @Test
+  void packagedPipelineFiltersWithInstalledSqlProvider() throws Exception {
+    Result result =
+        run(Files.readString(Path.of("..", "examples", "fake-sql-filter-console.conf")));
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[12,\"row-12\"]", "[14,\"row-14\"]");
+  }
+
+  @Test
   void malformedJsonDataFailsInsteadOfBecomingMissingValue() throws Exception {
     Result result =
         run(
-            "source { plugin=fake, options.rows=1 }\nsink.plugin=console\n"
+            "source { plugin=fake, options.rows=1 }\n"
+                + "sink.plugin=console\n"
                 + "transforms=[{plugin=json-path,options={field=name,path=\"$.missing\",target=extracted}}]");
     assertThat(result.code()).isEqualTo(1);
     assertThat(result.output()).isEmpty();

@@ -99,6 +99,8 @@
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.6</logback.version>
         <typesafe-config.version>1.4.3</typesafe-config.version>
+        <jsqlparser.version>4.9</jsqlparser.version>
+        <hsqldb.version>2.7.4</hsqldb.version>
         <jsonpath.version>2.9.0</jsonpath.version>
         <json-smart.version>2.5.2</json-smart.version>
         <jackson.version>2.17.1</jackson.version>
@@ -259,6 +261,17 @@
                 <groupId>net.minidev</groupId>
                 <artifactId>accessors-smart</artifactId>
                 <version>${json-smart.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.jsqlparser</groupId>
+                <artifactId>jsqlparser</artifactId>
+                <version>${jsqlparser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hsqldb</groupId>
+                <artifactId>hsqldb</artifactId>
+                <version>${hsqldb.version}</version>
             </dependency>
 
             <!-- Testing -->

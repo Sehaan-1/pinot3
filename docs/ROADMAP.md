@@ -130,3 +130,11 @@ profiles (PR #22).
   Config, Jackson (versions already pinned in the root POM).
 - **Lock:** `SeaTunnelException` hierarchy, HOCON parsing/validation, logging
   bootstrap. **Verify:** `./mvnw -pl seatunnel-common,seatunnel-config -am test`.
+
+### Slice 7a4: predicate filtering
+
+PR #12 (7a3 JSON-path) merged explicitly by request; Maven gates remain unverified.
+7a4 adds `sql-filter` only: JSqlParser 4.9 (Apache-2.0 option) + HSQLDB 2.7.4
+(permissive), transforms module, schema-preserving filter, parameterized private SQL.
+See [specification](SLICE-7A4.md). No API engine coupling. SQL projection remains next.
+Affected Maven tests, CLI E2E and full reactor gates remain unrun; no CI reservation.
