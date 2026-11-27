@@ -142,4 +142,27 @@ class PipelineIT {
     assertThat(run("source.plugin=fake\nsink.plugin=console", "--mode", "cluster").code())
         .isEqualTo(2);
   }
+
+  @Test
+  void packagedPipelineChainsRenameThenCopyUsingEvolvedSchema() throws Exception {
+    Result result =
+        run(
+            "source { plugin=fake, options { rows=2, start=10 } }\nsink.plugin=console\n"
+                + "transforms=[{plugin=field-rename,options.fields={id=event_id}},"
+                + "{plugin=field-copy,options.fields={copied_id=event_id}}]");
+    assertThat(result.code()).as(result.errors()).isZero();
+    assertThat(result.output().lines().toList())
+        .containsExactly("[10,\"row-10\",10]", "[11,\"row-11\",11]");
+  }
+
+  @Test
+  void invalidTransformSchemaFailsBeforeAnyRowsAreWritten() throws Exception {
+    Result result =
+        run(
+            "source.plugin=fake\nsink.plugin=console\n"
+                + "transforms=[{plugin=field-copy,options.fields={copied=missing}}]");
+    assertThat(result.code()).isEqualTo(1);
+    assertThat(result.output()).isEmpty();
+    assertThat(result.errors()).contains("Unknown source field");
+  }
 }
