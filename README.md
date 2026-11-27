@@ -33,8 +33,9 @@ all driven by declarative HOCON job configs and a plugin architecture.
 | 7a10 | Bounded SQL IN and BETWEEN filters | Merged by request; supplemental checks only |
 | 7a11 | Bounded SQL LIKE and ESCAPE filters | Merged by request; supplemental checks only |
 | 7b1 | Native row kinds and metadata extractor | Merged by request; Maven gates unrun |
-| 7b2 | Exact token filters (ANY/ALL) | Local checks; Maven gates unrun |
-| 7b remainder, 7d–7k | Remaining advanced transforms and connectors | Scope authorized; implementation outstanding |
+| 7b2 | Exact token filters (ANY/ALL) | Merged by request; Maven gates unrun |
+| 7b3 | Bounded multi-input TableMerge | Implemented; local checks, Maven gates unrun |
+| 7d–7k | Connectors and streaming prerequisites | Scope authorized; implementation outstanding |
 | 7c | Spark/Flink translation | Optional; deferred |
 
 Full plan: [docs/ROADMAP.md](docs/ROADMAP.md). Workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -428,4 +429,29 @@ reconciler. [Full contracts](docs/SLICE-7B2.md).
 
 Local operator/regression checks and ten actual LocalRunner examples passed using
 supplemental dependencies. New Maven/JUnit/packaged CLI gates remain unrun; no Actions.
-Remaining Stage7 runtime/TableMerge and connector work is still outstanding.
+All named 7b implementations are present; verification gaps remain. Streaming runtime
+and connector work is still outstanding.
+
+
+## Bounded TableMerge (Slice 7b3)
+
+[Specification](docs/SLICE-7B3.md) · [Runnable example](examples/fake-table-merge-console.conf).
+Use `sources = [{plugin=fake, options={rows=2,start=10}},
+{plugin=fake, options={rows=2,start=11}}]` instead of `source` (never both).
+A sources list requires 2..32 inputs; legacy single-source jobs and Java constructors
+remain supported. Each source must be bounded with identical ordered column names,
+types and nullability. Table names may differ; the first input supplies the output
+schema identity. This is UNION ALL, not a join, schema coercion or deduplication.
+
+Inputs drain in list order into one shared transform chain and sink writer. Duplicate
+rows and native row kinds survive unchanged. Readers/enumerators close between inputs;
+synchronous downstream writes provide backpressure without merge queues. One final
+success flush follows all inputs. Failure stops later inputs and closes resources;
+already-written nontransactional rows are not rolled back. A slow first input delays
+later inputs. No fairness, streaming/watermarks, checkpoint restore or transaction claim.
+TableMerge is a core topology operation, not a unary ServiceLoader transform.
+
+207 executable contracts and eleven actual LocalRunner example pipelines passed.
+Added JUnit/packaged CLI tests, affected Maven and full reactor remain unrun. No Actions.
+7b RowKindExtractor, FilterToken and bounded TableMerge implementations are present;
+this does not claim fully verified 7b or completed Stage7 connectors.

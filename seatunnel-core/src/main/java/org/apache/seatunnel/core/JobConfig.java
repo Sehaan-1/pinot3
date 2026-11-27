@@ -30,12 +30,15 @@ public record JobConfig(
     Map<String, Object> sourceOptions,
     String sinkId,
     Map<String, Object> sinkOptions,
-    List<TransformConfig> transforms) {
+    List<TransformConfig> transforms,
+    List<SourceConfig> additionalSources) {
   public JobConfig {
     validateId(sourceId);
     validateId(sinkId);
     sourceOptions = Map.copyOf(sourceOptions);
     sinkOptions = Map.copyOf(sinkOptions);
+    additionalSources = List.copyOf(additionalSources);
+    if (additionalSources.size() > 31) throw new ConfigException("At most 32 sources supported");
     transforms = List.copyOf(transforms);
     if (transforms.size() > 32) throw new ConfigException("At most 32 transforms supported");
   }
@@ -46,6 +49,29 @@ public record JobConfig(
       String sinkId,
       Map<String, Object> sinkOptions) {
     this(sourceId, sourceOptions, sinkId, sinkOptions, List.of());
+  }
+
+  public JobConfig(
+      String sourceId,
+      Map<String, Object> sourceOptions,
+      String sinkId,
+      Map<String, Object> sinkOptions,
+      List<TransformConfig> transforms) {
+    this(sourceId, sourceOptions, sinkId, sinkOptions, transforms, List.of());
+  }
+
+  public record SourceConfig(String plugin, Map<String, Object> options) {
+    public SourceConfig {
+      validateId(plugin);
+      options = Map.copyOf(options);
+    }
+  }
+
+  public List<SourceConfig> sources() {
+    var result = new ArrayList<SourceConfig>();
+    result.add(new SourceConfig(sourceId, sourceOptions));
+    result.addAll(additionalSources);
+    return List.copyOf(result);
   }
 
   public record TransformConfig(String plugin, Map<String, Object> options) {
@@ -64,8 +90,26 @@ public record JobConfig(
   public static JobConfig parse(Config input) {
     try {
       Config config = Config.of(input.unwrap().resolve());
-      allowed(config, Set.of("env", "source", "sink", "transforms"));
-      config.requireKeys("source", "sink");
+      allowed(config, Set.of("env", "source", "sources", "sink", "transforms"));
+      config.requireKeys("sink");
+      boolean single = config.unwrap().hasPathOrNull("source");
+      boolean multiple = config.unwrap().hasPathOrNull("sources");
+      if (single == multiple) throw new ConfigException("Specify exactly one of source or sources");
+      List<SourceConfig> inputs = new ArrayList<>();
+      if (single) {
+        Config entry = config.getConfig("source");
+        allowed(entry, Set.of("plugin", "options"));
+        inputs.add(new SourceConfig(entry.getString("plugin"), options(entry)));
+      } else {
+        var entries = config.unwrap().getConfigList("sources");
+        if (entries.size() < 2 || entries.size() > 32)
+          throw new ConfigException("sources requires 2..32 inputs");
+        for (var raw : entries) {
+          Config entry = Config.of(raw);
+          allowed(entry, Set.of("plugin", "options"));
+          inputs.add(new SourceConfig(entry.getString("plugin"), options(entry)));
+        }
+      }
       if (config.unwrap().hasPathOrNull("env")) {
         Config env = config.getConfig("env");
         allowed(env, Set.of("parallelism"));
@@ -73,9 +117,7 @@ public record JobConfig(
           throw new ConfigException("Local baseline supports parallelism = 1 only");
         }
       }
-      Config source = config.getConfig("source");
       Config sink = config.getConfig("sink");
-      allowed(source, Set.of("plugin", "options"));
       allowed(sink, Set.of("plugin", "options"));
       List<TransformConfig> transforms = new ArrayList<>();
       if (config.unwrap().hasPathOrNull("transforms")) {
@@ -87,11 +129,12 @@ public record JobConfig(
         }
       }
       return new JobConfig(
-          source.getString("plugin"),
-          options(source),
+          inputs.get(0).plugin(),
+          inputs.get(0).options(),
           sink.getString("plugin"),
           options(sink),
-          transforms);
+          transforms,
+          inputs.subList(1, inputs.size()));
     } catch (com.typesafe.config.ConfigException failure) {
       throw new ConfigException("Invalid or unresolved job configuration", failure);
     }

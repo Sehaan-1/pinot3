@@ -177,3 +177,11 @@ Slice7b2 starts zero Actions, [skip ci]. User's "next then merge" grants an expl
 unverified-merge exception for this one next PR only, not more CI or Stage7-wide merges.
 Reserved25m/observed14m45s unchanged; grants spent. Local shaded-Guava/Jackson checks
 are supplemental; new Maven/JUnit/packaged CLI/full reactor gates remain unrun.
+
+
+Slice7b3: user requested next then merge and all remaining7b. This authorizes this
+cohesive bounded TableMerge/multi-input PR merge despite outstanding verification,
+not Actions or connector merges. Zero Actions, [skip ci]; reserved25m/observed14m45s
+unchanged. 207 offline executable contracts,423 regressions and eleven real LocalRunner pipelines
+passed using prior supplemental dependencies. JUnit/packaged CLI/affected Maven/full
+reactor gates remain unrun;7b is implemented, not fully verified.

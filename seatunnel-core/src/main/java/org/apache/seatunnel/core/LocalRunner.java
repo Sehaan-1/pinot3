@@ -18,6 +18,7 @@ package org.apache.seatunnel.core;
 
 import java.io.Serializable;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.apache.seatunnel.api.sink.SeaTunnelSink;
@@ -42,8 +43,12 @@ public final class LocalRunner {
         var sinks = PluginDiscovery.fromClasspath(SinkPlugin.class);
         var transforms = PluginDiscovery.fromClasspath(TransformPlugin.class);
         var chain = new TransformChain()) {
-      var source = sources.get(config.sourceId()).createSource(config.sourceOptions());
-      var table = source.producedTable();
+      List<SeaTunnelSource<?, ?, ?>> inputs = new ArrayList<>();
+      for (var entry : config.sources()) {
+        inputs.add(sources.get(entry.plugin()).createSource(entry.options()));
+      }
+      validateInputs(inputs);
+      var table = inputs.get(0).producedTable();
       for (var entry : config.transforms()) {
         var transform = transforms.get(entry.plugin()).createTransform(entry.options(), table);
         chain.add(transform);
@@ -53,7 +58,7 @@ public final class LocalRunner {
           sinks
               .get(config.sinkId())
               .createSink(config.sinkOptions(), table, new PluginContext(output));
-      return execute(source, sink, chain);
+      return executeInputs(inputs, sink, chain);
     }
   }
 
@@ -78,75 +83,113 @@ public final class LocalRunner {
           T extends Serializable>
       long execute(SeaTunnelSource<S, R, E> source, SeaTunnelSink<W, T> sink, TransformChain chain)
           throws Exception {
-    if (source.boundedness() != Boundedness.BOUNDED) {
-      throw new IllegalArgumentException("Local baseline requires a bounded source");
+    return executeInputs(List.of(source), sink, chain);
+  }
+
+  /** Schema-aligned bounded UNION ALL, in input order, with one shared sink writer. */
+  public <W extends CheckpointState, T extends Serializable> long executeTableMerge(
+      List<? extends SeaTunnelSource<?, ?, ?>> inputs, SeaTunnelSink<W, T> sink) throws Exception {
+    try (var chain = new TransformChain()) {
+      return executeInputs(List.copyOf(inputs), sink, chain);
     }
-    int arity = source.producedTable().columns().size();
+  }
+
+  private static void validateInputs(List<? extends SeaTunnelSource<?, ?, ?>> inputs) {
+    if (inputs.isEmpty() || inputs.size() > 32)
+      throw new IllegalArgumentException("TableMerge requires 1..32 inputs");
+    var columns = inputs.get(0).producedTable().columns();
+    for (var input : inputs) {
+      if (input.boundedness() != Boundedness.BOUNDED)
+        throw new IllegalArgumentException("Local baseline requires a bounded source");
+      if (!columns.equals(input.producedTable().columns()))
+        throw new IllegalArgumentException("TableMerge requires identical ordered columns");
+    }
+  }
+
+  private <W extends CheckpointState, T extends Serializable> long executeInputs(
+      List<? extends SeaTunnelSource<?, ?, ?>> inputs,
+      SeaTunnelSink<W, T> sink,
+      TransformChain chain)
+      throws Exception {
+    validateInputs(inputs);
     try (SinkCommitter<T> committer = sink.createCommitter().orElse(null)) {
-      if (committer != null) {
+      if (committer != null)
         throw new IllegalArgumentException("Local baseline does not support transactional sinks");
+      try (SinkWriter<W, T> writer = sink.createWriter(0, Optional.empty())) {
+        chain.open();
+        long count = 0;
+        for (var input : inputs) count += drain(input, writer, chain);
+        writer.flush(true);
+        return count;
       }
-      try (SourceReader<S, R> reader = source.createReader(0, Optional.empty());
-          SinkWriter<W, T> writer = sink.createWriter(0, Optional.empty())) {
-        SplitEnumerator.Context<S> context =
-            new SplitEnumerator.Context<>() {
-              @Override
-              public int currentParallelism() {
-                return 1;
-              }
+    }
+  }
 
-              @Override
-              public void assignSplits(int readerId, List<S> splits) throws Exception {
-                checkReader(readerId);
-                reader.addSplits(splits);
-              }
+  private <
+          S extends SourceSplit,
+          R extends CheckpointState,
+          E extends CheckpointState,
+          W extends CheckpointState,
+          T extends Serializable>
+      long drain(SeaTunnelSource<S, R, E> source, SinkWriter<W, T> writer, TransformChain chain)
+          throws Exception {
+    int arity = source.producedTable().columns().size();
+    try (SourceReader<S, R> reader = source.createReader(0, Optional.empty())) {
+      SplitEnumerator.Context<S> context =
+          new SplitEnumerator.Context<>() {
+            @Override
+            public int currentParallelism() {
+              return 1;
+            }
 
-              @Override
-              public void signalNoMoreSplits(int readerId) throws Exception {
-                checkReader(readerId);
-                reader.notifyNoMoreSplits();
-              }
+            @Override
+            public void assignSplits(int readerId, List<S> splits) throws Exception {
+              checkReader(readerId);
+              reader.addSplits(splits);
+            }
 
-              private void checkReader(int readerId) {
-                if (readerId != 0) {
-                  throw new IllegalArgumentException("Unknown local reader: " + readerId);
-                }
+            @Override
+            public void signalNoMoreSplits(int readerId) throws Exception {
+              checkReader(readerId);
+              reader.notifyNoMoreSplits();
+            }
+
+            private void checkReader(int readerId) {
+              if (readerId != 0) {
+                throw new IllegalArgumentException("Unknown local reader: " + readerId);
               }
-            };
-        try (SplitEnumerator<S, E> enumerator =
-            source.createEnumerator(context, Optional.empty())) {
-          chain.open();
-          reader.start();
-          enumerator.start();
-          enumerator.registerReader(0);
-          enumerator.handleSplitRequest(0);
-          long[] count = {0};
-          while (true) {
-            if (Thread.currentThread().isInterrupted()) {
-              throw new InterruptedException("Local job interrupted");
             }
-            SourceReader.ReadStatus status =
-                reader.pollNext(
-                    row -> {
-                      if (row.getArity() != arity) {
-                        throw new IllegalArgumentException(
-                            "Source row does not match declared arity");
-                      }
-                      chain.emit(
-                          row,
-                          transformed -> {
-                            writer.write(transformed);
-                            count[0]++;
-                          });
-                    });
-            if (status == SourceReader.ReadStatus.END_OF_INPUT) {
-              writer.flush(true);
-              return count[0];
-            }
-            if (status == SourceReader.ReadStatus.NOTHING_AVAILABLE) {
-              enumerator.handleSplitRequest(0);
-              Thread.sleep(1); // JDK backoff, not a scheduler or busy-spin.
-            }
+          };
+      try (SplitEnumerator<S, E> enumerator = source.createEnumerator(context, Optional.empty())) {
+        reader.start();
+        enumerator.start();
+        enumerator.registerReader(0);
+        enumerator.handleSplitRequest(0);
+        long[] count = {0};
+        while (true) {
+          if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("Local job interrupted");
+          }
+          SourceReader.ReadStatus status =
+              reader.pollNext(
+                  row -> {
+                    if (row.getArity() != arity) {
+                      throw new IllegalArgumentException(
+                          "Source row does not match declared arity");
+                    }
+                    chain.emit(
+                        row,
+                        transformed -> {
+                          writer.write(transformed);
+                          count[0]++;
+                        });
+                  });
+          if (status == SourceReader.ReadStatus.END_OF_INPUT) {
+            return count[0];
+          }
+          if (status == SourceReader.ReadStatus.NOTHING_AVAILABLE) {
+            enumerator.handleSplitRequest(0);
+            Thread.sleep(1); // JDK backoff, not a scheduler or busy-spin.
           }
         }
       }

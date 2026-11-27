@@ -38,8 +38,9 @@ supplemental evidence and explicit unverified merges only. A full verification g
 
 1. `LocalRunner.execute` accepts BOUNDED sources only and rejects a nonempty sink
    committer. It is not an unbounded streaming runtime or checkpoint/transaction driver.
-2. `SeaTunnelTransform` is a unary row-to-rows API; ordered chains do not implement
-   multi-input topology, input watermarks, joins or merge coordination.
+2. `SeaTunnelTransform` remains unary. Slice7b3 adds bounded multi-input UNION ALL
+   in core LocalRunner, not in a unary plugin. No watermarks, joins, streaming merge
+   coordination or distributed DAG integration is claimed.
 3. At the planning checkpoint `SeaTunnelRow` lacked native row-kind metadata. Slice7b1
    adds that engine-independent carrier and a real metadata extractor with preservation
    through existing transforms. Local checks only; Maven gates remain pending. CDC
@@ -62,8 +63,8 @@ verification evidence, not merely an opened PR or a library dependency in a POM.
 
 | Done | Deliverable | Adopt / adapt (pins at implementation entry) | Public contract / required real E2E |
 |---|---|---|---|
-| [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | 7b1 native row-kind/extractor and7b2 exact-token filter are implemented with local supplemental checks. Maven/JUnit/packaged CLI gates remain unrun; do not check off this bundle until verified. TableMerge/runtime work is separate below. |
-| [ ] | Multi-input prerequisite + TableMerge | Existing DAG/task/transport primitives; library serialization; no new scheduler in transforms | Define schema-aligned table union vs relational join explicitly (union is proposed baseline); multiple input lifecycle/backpressure/end-of-input, failure cleanup and real multi-source E2E. Unary chains alone do not satisfy this. |
+| [ ] |7b advanced unary transforms | Existing Guava/Commons/Jackson/format adapters; no bespoke token/JSON parser | 7b1 native row-kind/extractor and7b2 exact-token filter are implemented with local supplemental checks. Maven/JUnit/packaged CLI gates remain unrun; do not check off this bundle until verified. All named unary 7b implementations are present; verification remains incomplete. |
+| [ ] | Multi-input prerequisite + TableMerge | Existing DAG/task/transport primitives; library serialization; no new scheduler in transforms | Slice7b3 implements bounded schema-aligned UNION ALL in core, serial inputs/shared chain and writer, preflight validation, backpressure/end-of-input/failure cleanup. 207 local contracts + real multi-source E2E passed; Maven/JUnit/installed CLI/full reactor unrun. No streaming or distributed merge claim. |
 | [ ] |7d JDBC PostgreSQL source + sink | HikariCP + pgjdbc (Apache-2.0 / BSD-style); JDBC prepared statements | Bounded partitioned read, explicit schema, typed binding, cursor/resource ownership, batch flush/rollback/restore contracts, no false exactly-once claim. Real PostgreSQL round-trip and failure tests. JDBC specification required at implementation entry. |
 | [ ] |7d MySQL adapter and driver decision | JDBC/HikariCP reuse; driver license/distribution review first | Real MySQL round-trip/schema/type/quoting/NULL tests. pgjdbc/HSQLDB evidence does not count. Driver must be reproducibly loadable in installed CLI. |
 | [ ] | Streaming/checkpoint runtime prerequisite | Existing engine/transport/state primitives, no connector-owned coordinator | Unbounded poll/cancellation/backpressure, checkpoint->source offset/sink flush ordering, close/restart/restore tests with real adapters. No generic exactly-once promise without corresponding external protocol. |
@@ -138,6 +139,7 @@ Stage7 is complete only when every mandatory row above is implemented, reviewed,
 merged and has its required verification evidence, with all delivery guarantees
 accurate and all known blockers resolved. Optional7c is listed as deferred, not done.
 There is no Stage7 completion claim in this planning PR. Current production progress:7b1 native row-kind carrier/extractor/preservation and
-7b2 literal-token filtering, with supplemental local checks only. Next: multi-input/
-TableMerge/runtime prerequisites, then JDBC (first connector) and the remaining rows. No
+7b2 literal-token filtering and7b3 bounded multi-input TableMerge, with supplemental
+local checks only. All named7b implementations are present; gates remain unrun. Next:
+JDBC (first connector); streaming runtime prerequisites precede unbounded connectors. No
 mandatory row above is fully complete/verified yet.
