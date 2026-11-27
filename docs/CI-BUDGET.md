@@ -96,3 +96,21 @@ This is verification-only, not authorization to merge that PR or begin another s
   test logging config exists), but this is not yet a confirmed root cause.
 - No automatic fixes/rerun/merge. Existing PR-only triggers unchanged; this follow-up
   record uses [skip ci]. More Actions require another explicit user authorization.
+
+## Second explicit one-time authorization: fix and verification
+
+The user authorized one further Actions run to resolve the JSON-path CLI failure.
+Reserve one additional five-minute job; conservative reservations now total **25
+minutes**, exceeding the original ceiling only under this new explicit scoped
+permission. No automatic rerun or future budget is implied. The previous 11m44s
+observed runtime remains historical, not billed time or reclaimable reservation.
+
+Fix plan: ship CLI-owned Logback defaults with INFO root and explicit stderr target.
+Pinned Logback1.5.6 source shows default DEBUG root and BasicConfigurator console
+appender defaulting to stdout; Jayway2.9.0 CompiledPath logs DEBUG on evaluation.
+No production logback.xml existed. That combination contaminates JSON stdout with a
+clock timestamp, consistent with the previous unexpected-colon parsing error.
+Do not filter log lines out in tests or suppress parse failures. Retain JSON E2E
+assertions and add a packaged-JAR subprocess regression proving warnings go to stderr
+while stdout remains exact JSON. One non-skip commit triggers the single run on PR16;
+any post-run documentation/fixes use [skip ci]. Do not merge automatically.
